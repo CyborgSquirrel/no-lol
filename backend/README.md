@@ -20,8 +20,23 @@ pip install -r ./requirements.txt
 ```
 
 De acum inainte, mereu cand ai de gand sa lucrezi la proiect, **nu uita** sa
-scrii comanda
+activezi venv-ul, scriind comanda:
 
 ```sh
 source ./venv/bin/activate
 ```
+
+# Running
+
+Asigura-te mai intai ca ai rulat comanda care activeaza venv-ul, apoi ruleaza:
+
+```sh
+python main.py
+```
+
+# Conventii
+
+Daca vrei sa fii cool 😎, atunci respecta urmatoarele conventii:
+
+- nume de variabile, functii in `snake_case`
+- nume de clase in `PascalCase`
