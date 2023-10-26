@@ -52,10 +52,6 @@ function App() {
                             <img src={reactLogo} className="logo react" alt="React logo"/>
                         </Link>
                     </Box>
-                    <Typography variant={"h4"} textAlign={"center"}>Vite + React</Typography>
-                    <Typography className="read-the-docs" textAlign={"center"}>
-                        Click on the Vite and React logos to learn more
-                    </Typography>
                 </Box>
             </Container>
         </Box>
