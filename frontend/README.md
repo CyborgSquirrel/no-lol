@@ -7,7 +7,9 @@ Proiectul a fost creat cu **WebStorm 2023.2.3**, folosind **Vite**.
 Urmatoarele package-uri sunt deja trecute in fisierele [package.json](package.json) si [package-lock.json](package-lock.json):
 - Material UI v5 (component library)
 - Material UI Icons (icons)
-- React Router v6 (Single-Page Application router for navigation)
+- React Router v6 (router for navigation)
+- React Query v5 (server state manager)
+- zustand (application state manager)
 - axios (http client)
 
 # Setup
@@ -53,4 +55,6 @@ Tips:
 - Material UI: https://mui.com/material-ui/getting-started/
 - Material UI Icons: https://mui.com/material-ui/material-icons/
 - React Router: https://reactrouter.com/en/main
+- React Query: https://tanstack.com/query/latest/docs/react/overview
+- zustand: https://zustand-demo.pmnd.rs/
 - axios: https://axios-http.com/docs/intro
