@@ -13,6 +13,7 @@ with sqlalchemy.orm.Session(engine) as sess:
     # Thank u Costin for letting me use your account here :))
     user = models.User(
         name="cstn",
+        password="pass",
     )
     user.profile = models.Profile(
         riot_id="jdmPqyCWzzU8GK412CbHGEh9bkUmuYptt6wBrzLFm3WPNWs",

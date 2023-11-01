@@ -18,6 +18,7 @@ class User(ModelBase):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
+    password: Mapped[str]
     profile: Mapped["Profile"] = relationship(back_populates="user")
 
     def to_dict(self):

@@ -1,11 +1,13 @@
 import argparse
 import base64
 import json
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from http import HTTPStatus as status
 from io import BytesIO
 
 import cassiopeia as cass
+import dacite
 import flask
 import flask.views as views
 import flask_cors
@@ -65,11 +67,36 @@ class UserDetailView(views.MethodView):
 
             session.commit()
             
-            return user.to_json()
+            return user.to_dict()
 
     def get(self, id: int):
         entity = self._get_entity(id)
-        return entity
+        return flask.jsonify(entity)
+
+
+@dataclass
+class UserLoginRequest:
+    name: str
+    password: str
+
+
+@app.post("/user/login")
+def user_login():
+    data = flask.request.json
+    try:
+        data = dacite.from_dict(data_class=UserLoginRequest, data=data)
+    except dacite.DaciteError:
+        return "", status.BAD_REQUEST
+
+    with sqlalchemy.orm.Session(engine) as session:
+        user: models.User = session.query(models.User).filter_by(name=data.name).one_or_none()
+        if user is None:
+            return "", status.UNAUTHORIZED
+
+    if user.password != data.password:
+        return "", status.UNAUTHORIZED
+
+    return flask.jsonify(dict(id=user.id))
 
 
 # here i just played with cassiopeia package
@@ -104,7 +131,7 @@ def main():
     
     # routes
     app.add_url_rule("/users", view_func=UserListView.as_view("user_list"))
-    app.add_url_rule("/user/<int:id>", view_func=UserDetailView.as_view("user_detail"))
+    app.add_url_rule("/user/by-id/<int:id>", view_func=UserDetailView.as_view("user_detail"))
 
     models.ModelBase.metadata.create_all(engine)
     app.run(host="0.0.0.0", port=5000, debug=True)
