@@ -1,6 +1,8 @@
 import json
+from datetime import datetime
+
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import String, ForeignKey
 
 
 class ModelBase(DeclarativeBase):
@@ -29,22 +31,33 @@ class User(ModelBase):
 class Profile(ModelBase):
     __tablename__ = "Profile"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    # NOTE(andreij): Why use riot_id+riot_region instead of puuid? Because
+    # getting a summoner by puuid is not yet supported in cassiopeia[0].
+    # [0]: https://github.com/meraki-analytics/cassiopeia/issues/441
+    riot_id: Mapped[str] = mapped_column(nullable=False, primary_key=True)
+    riot_region: Mapped[str] = mapped_column(nullable=False, primary_key=True)
+
     user_id: Mapped[int] = mapped_column(ForeignKey("User.id"), nullable=False)
     user: Mapped["User"] = relationship(back_populates="profile")
-    summoner: Mapped[str]
+
     balance: Mapped[int] = mapped_column(default=0, nullable=False)
-    last_match_id: Mapped[int]
     hours_played: Mapped[int] = mapped_column(default=0, nullable=False)
+
     icon_id: Mapped[int] = mapped_column(ForeignKey("Icon.id"))
     icon: Mapped["Icon"] = relationship()
 
+    last_match_updated: Mapped[datetime] = mapped_column(nullable=True)
+    last_match_id: Mapped[int] = mapped_column(nullable=True)
+    last_match_end: Mapped[datetime] = mapped_column(nullable=True)
+
     def to_dict(self):
         return {
-            "id": self.id,
+            "riot_id": self.riot_id,
+            "riot_region": self.riot_region,
             "user_id": self.user_id,
             "balance": self.balance,
             "hours_played": self.hours_played,
+            "last_match_end": int(self.last_match_end.timestamp()),
             "icon": self.icon.to_dict()
         }
 

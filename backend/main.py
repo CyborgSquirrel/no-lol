@@ -1,16 +1,18 @@
+import argparse
+import base64
+import json
+from datetime import datetime, timedelta
+from http import HTTPStatus as status
+from io import BytesIO
+
+import cassiopeia as cass
 import flask
-import flask_cors
 import flask.views as views
+import flask_cors
 import sqlalchemy
 import sqlalchemy.orm
-from http import HTTPStatus as status
 
 import models
-
-from io import BytesIO
-import base64
-import cassiopeia as cass
-
 
 # setup flask & sqlalchemy
 app = flask.Flask(__name__)
@@ -21,7 +23,6 @@ flask_cors.CORS(app)  # get rid of cors
 cass_config = cass.get_default_config()
 cass_config["logging"]["print_calls"] = False
 cass.apply_settings(cass_config)
-cass.set_riot_api_key("")
 
 
 class UserListView(views.MethodView):
@@ -42,11 +43,33 @@ class UserListView(views.MethodView):
 class UserDetailView(views.MethodView):
     def _get_entity(self, id: int):
         with sqlalchemy.orm.Session(engine) as session:
-            return session.query(models.User).filter_by(id=id).one()
+            user: models.User = session.query(models.User).filter_by(id=id).one()
+            profile = user.profile
+
+            # Check whether last_match information is out of date (or missing),
+            # and if it is, update it.
+            now = datetime.now()
+            if (   profile.last_match_updated is None
+                or now - profile.last_match_updated > timedelta(hours=1)
+            ):
+                # TODO: Handle the case where it's an account on which no
+                # matches have been played.
+                summoner = cass.Summoner(id=profile.riot_id, region=profile.riot_region)
+                last_match = summoner.match_history[0]
+
+                profile.last_match_updated = now
+                if profile.last_match_id != last_match.id:
+                    last_match_end = (last_match.start + last_match.duration).datetime
+                    profile.last_match_id = last_match.id
+                    profile.last_match_end = last_match_end
+
+            session.commit()
+            
+            return user.to_json()
 
     def get(self, id: int):
         entity = self._get_entity(id)
-        return entity.to_json()
+        return entity
 
 
 # here i just played with cassiopeia package
@@ -69,6 +92,16 @@ def test():
 
 
 def main():
+    # cli args
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("config_file")
+    args = argparser.parse_args()
+
+    # config file
+    with open(args.config_file) as f:
+        config = json.load(f)
+    cass.set_riot_api_key(config["riot_api_key"])
+    
     # routes
     app.add_url_rule("/users", view_func=UserListView.as_view("user_list"))
     app.add_url_rule("/user/<int:id>", view_func=UserDetailView.as_view("user_detail"))
