@@ -1,3 +1,6 @@
 flask==2.2.5
 sqlalchemy==2.0.13
 Flask-Cors==3.0.10
+cassiopeia==5.0.3
+ipython==8.17.1
+dacite==1.8.1
