@@ -29,34 +29,47 @@ cass.apply_settings(cass_config)
 
 class UserListView(views.MethodView):
     def get(self):
+        """ Returns the list of all users. """
         with sqlalchemy.orm.Session(engine) as session:
-            result = session.query(models.User).all()
-        return result
+            users = session.query(models.User).all()
+            result = [user.to_dict() for user in users]
+            return result
 
     def post(self):
+        """ Creates a new user. """
         data = flask.request.json
         with sqlalchemy.orm.Session(engine) as session:
             entity = models.User(**data)
             session.add(entity)
             session.commit()
-        return "", status.CREATED
+            return "", status.CREATED
 
 
 class UserDetailView(views.MethodView):
-    def _get_entity(self, id: int):
+    wait_time = timedelta(hours=1)      # time to wait between profile updates
+
+    def _get_user_data(self, id: int) -> dict:
+        """ Retrieves the user by id.
+
+        Args:
+            id (int): id of the user
+
+        Returns: a dictionary containing user data
+        """
         with sqlalchemy.orm.Session(engine) as session:
             user: models.User = session.query(models.User).filter_by(id=id).one()
-            profile = user.profile
+            profile: models.Profile = user.profile
 
-            # Check whether last_match information is out of date (or missing),
+            # check whether last_match information is out of date (or missing),
             # and if it is, update it.
             now = datetime.now()
-            if (   profile.last_match_updated is None
-                or now - profile.last_match_updated > timedelta(hours=1)
+            if (
+                profile.last_match_updated is None or
+                now - profile.last_match_updated >= self.wait_time
             ):
                 # TODO: Handle the case where it's an account on which no
                 # matches have been played.
-                summoner = cass.Summoner(id=profile.riot_id, region=profile.riot_region)
+                summoner = cass.Summoner(puuid=profile.riot_puuid, region=profile.riot_region)
                 last_match = summoner.match_history[0]
 
                 profile.last_match_updated = now
@@ -66,12 +79,13 @@ class UserDetailView(views.MethodView):
                     profile.last_match_end = last_match_end
 
             session.commit()
-            
+
             return user.to_dict()
 
     def get(self, id: int):
-        entity = self._get_entity(id)
-        return flask.jsonify(entity)
+        """ Returns the user by id. """
+        user_data = self._get_user_data(id)
+        return user_data
 
 
 @dataclass
@@ -133,6 +147,7 @@ def main():
     app.add_url_rule("/users", view_func=UserListView.as_view("user_list"))
     app.add_url_rule("/user/by-id/<int:id>", view_func=UserDetailView.as_view("user_detail"))
 
+    # create db & run flask
     models.ModelBase.metadata.create_all(engine)
     app.run(host="0.0.0.0", port=5000, debug=True)
 
