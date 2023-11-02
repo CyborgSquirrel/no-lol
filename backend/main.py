@@ -51,6 +51,12 @@ class UserDetailView(views.MethodView):
     def _get_user_data(self, id: int) -> dict:
         """ Retrieves the user by id.
 
+        This method will update at regular intervals of time, defined by `wait_time`, the user's profile
+
+        Possible updates:
+            - profile icon: TODO
+            - last match: it is updated with the match start datetime + user's time played
+
         Args:
             id (int): id of the user
 
@@ -61,22 +67,32 @@ class UserDetailView(views.MethodView):
             profile: models.Profile = user.profile
 
             # check whether last_match information is out of date (or missing),
-            # and if it is, update it.
+            # and if it is, update it
             now = datetime.now()
             if (
                 profile.last_match_updated is None or
                 now - profile.last_match_updated >= self.wait_time
             ):
-                # TODO: Handle the case where it's an account on which no
-                # matches have been played.
+                # get summoner's match history
                 summoner = cass.Summoner(puuid=profile.riot_puuid, region=profile.riot_region)
-                last_match = summoner.match_history[0]
+                match_history = summoner.match_history
 
                 profile.last_match_updated = now
-                if profile.last_match_id != last_match.id:
-                    last_match_end = (last_match.start + last_match.duration).datetime
-                    profile.last_match_id = last_match.id
-                    profile.last_match_end = last_match_end
+
+                # if match history is empty an exception will be raised and ignore
+                # otherwise update the last match if necessary
+                try:
+                    last_match = match_history[0]
+                    participant = next((p for p in last_match.participants if p.summoner.puuid == profile.riot_puuid), None)
+                    if participant is None:
+                        # this should not happen
+                        assert False
+                    if profile.last_match_id != last_match.id:
+                        last_match_end = (last_match.start + participant.stats.time_played).datetime
+                        profile.last_match_id = last_match.id
+                        profile.last_match_end = last_match_end
+                except IndexError:
+                    pass
 
             session.commit()
 

@@ -67,7 +67,7 @@ class Profile(ModelBase):
             "balance": self.balance,
             "hours_played": self.hours_played,
             "icon_id": self.icon_id,
-            "last_match_end": int(self.last_match_end.timestamp()) if self.last_match_id is not None else None,
+            "last_match_end": int(self.last_match_end.timestamp()) if self.last_match_id is not None else None
         }
 
 
