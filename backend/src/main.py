@@ -1,10 +1,9 @@
 import argparse
-import base64
 import json
+import pathlib
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from http import HTTPStatus as status
-from io import BytesIO
 
 import cassiopeia as cass
 import dacite
@@ -25,6 +24,10 @@ flask_cors.CORS(app)  # get rid of cors
 cass_config = cass.get_default_config()
 cass_config["logging"]["print_calls"] = False
 cass.apply_settings(cass_config)
+
+# other config
+STATIC_PATH = "static"
+ICONS_PATH = f"{STATIC_PATH}/icons"
 
 
 class UserListView(views.MethodView):
@@ -48,47 +51,73 @@ class UserListView(views.MethodView):
 class UserDetailView(views.MethodView):
     wait_time = timedelta(hours=1)      # time to wait between profile updates
 
-    def _get_user_data(self, id: int) -> dict:
-        """ Retrieves the user by id.
+    def _get_user_data(self, id: int) -> dict | None:
+        """ Retrieves the user dict representation by id. If no user was found it will return None.
 
         This method will update at regular intervals of time, defined by `wait_time`, the user's profile
 
         Possible updates:
-            - profile icon: TODO
+            - profile icon: if it does not exist it will be fetched and stored
             - last match: it is updated with the match start datetime + user's time played
 
         Args:
             id (int): id of the user
 
-        Returns: a dictionary containing user data
+        Returns: a dictionary containing user data if the user was found else None
         """
         with sqlalchemy.orm.Session(engine) as session:
-            user: models.User = session.query(models.User).filter_by(id=id).one()
+            user: models.User = session.query(models.User).filter_by(id=id).one_or_none()
+
+            # user not found
+            if user is None:
+                return None
+
             profile: models.Profile = user.profile
 
-            # check whether last_match information is out of date (or missing),
+            # check whether profile information is out of date (or missing),
             # and if it is, update it
             now = datetime.now()
             if (
                 profile.last_match_updated is None or
                 now - profile.last_match_updated >= self.wait_time
             ):
-                # get summoner's match history
-                summoner = cass.Summoner(puuid=profile.riot_puuid, region=profile.riot_region)
-                match_history = summoner.match_history
-
                 profile.last_match_updated = now
+
+                # get summoner associated with user
+                summoner = cass.Summoner(puuid=profile.riot_puuid, region=profile.riot_region)
+
+                # 1) check summoner's icon
+                icon = summoner.profile_icon
+                if profile.icon.id != icon.id:
+                    # get the new icon
+                    new_icon: models.Icon = session.query(models.Icon).filter_by(id=icon.id).one_or_none()
+
+                    # if icon is missing, save and store it
+                    if new_icon is None:
+                        # save and store in db
+                        icon_path = f"{ICONS_PATH}/{icon.id}.{icon.image.format.lower()}"
+                        pathlib.Path(icon_path).parent.mkdir(parents=True, exist_ok=True)
+
+                        icon.image.save(icon_path)
+                        new_icon = models.Icon(id=icon.id, path=icon_path)
+
+                    # assign the new icon
+                    profile.icon = new_icon
+
+                # 2) check summoner's match history
+                match_history = summoner.match_history
 
                 # if match history is empty an exception will be raised and ignore
                 # otherwise update the last match if necessary
                 try:
                     last_match = match_history[0]
-                    participant = next((p for p in last_match.participants if p.summoner.puuid == profile.riot_puuid), None)
-                    if participant is None:
-                        # this should not happen
-                        assert False
                     if profile.last_match_id != last_match.id:
-                        last_match_end = (last_match.start + participant.stats.time_played).datetime
+                        participant = next((p for p in last_match.participants if p.summoner.puuid == profile.riot_puuid), None)
+                        if participant is None:
+                            # this should not happen
+                            assert False
+
+                        last_match_end = (last_match.start + timedelta(seconds=participant.stats.time_played)).datetime
                         profile.last_match_id = last_match.id
                         profile.last_match_end = last_match_end
                 except IndexError:
@@ -101,6 +130,8 @@ class UserDetailView(views.MethodView):
     def get(self, id: int):
         """ Returns the user by id. """
         user_data = self._get_user_data(id)
+        if user_data is None:
+            return "", status.NOT_FOUND
         return user_data
 
 
@@ -126,34 +157,23 @@ def user_login():
     if user.password != data.password:
         return "", status.UNAUTHORIZED
 
-    return flask.jsonify(dict(id=user.id))
+    return dict(id=user.id)
 
 
-# here i just played with cassiopeia package
-# it's not important
-@app.get("/bla")
-def test():
-    summoner = cass.get_summoner(name="99 9 impulse fm", region="EUW")
+@app.get("/icon/by-id/<int:id>")
+def get_icon(id: int):
+    with sqlalchemy.orm.Session(engine) as session:
+        icon: models.Icon = session.query(models.Icon).filter_by(id=id).one_or_none()
+        if icon is None:
+            return "", status.NOT_FOUND
 
-    image = BytesIO()
-    summoner.profile_icon.image.save(image, "JPEG")
-    image_base64 = base64.b64encode(image.getvalue()).decode("utf-8")
+        # get abolute path
+        icon_path = pathlib.Path(icon.path).resolve()
 
-    matches: list[cass.Match] = list(summoner.match_history)
-    print(matches[0].participants)
-
-    return {
-        "name": "bla",
-        "other": matches
-    }
+        return flask.send_file(icon_path, "image/png")
 
 
-def main():
-    # cli args
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument("config_file")
-    args = argparser.parse_args()
-
+def main(args):
     # config file
     with open(args.config_file) as f:
         config = json.load(f)
@@ -169,4 +189,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # cli args
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("config_file")
+
+    main(argparser.parse_args())
