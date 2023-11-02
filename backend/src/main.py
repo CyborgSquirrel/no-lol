@@ -78,8 +78,8 @@ class UserDetailView(views.MethodView):
             # and if it is, update it
             now = datetime.now()
             if (
-                profile.last_match_updated is None or
-                now - profile.last_match_updated >= self.wait_time
+                profile.last_match_updated is None
+                or now - profile.last_match_updated >= self.wait_time
             ):
                 profile.last_match_updated = now
 
