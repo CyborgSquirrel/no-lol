@@ -25,7 +25,7 @@ users = [
         "name": "cstn",
         "password": "pass",
         "profile": {
-            "riot_puuid": "6EdYfH55OSo1dZlzFz3WRzK8PiOW_vqPc6DNB-vUq2eb3SkdHhIjZrFtl-zHRC2rXjSdnNv0IuzdFQ",
+            "riot_puuid": "7Va3SJuMDV3ZN-VQc1Fs9g-UlNCrU5XtaK-I8VtVDZnRBFAJYrzYcHbnAqG0-iRBhfn6t9b6vY4hcg",
             "riot_region": "EUNE"
         }
     },
@@ -33,7 +33,7 @@ users = [
         "name": "99 9 impulse fm",
         "password": "pass",
         "profile": {
-            "riot_puuid": "jB7KsGhW3CdoTQ20Em8ugdIVyCFMp9q0dI7szykzG3yjoyvEAlc15eK8Y2QWTmkf9puPSixmyPe1vA",
+            "riot_puuid": "Blgfgj-GgVp28saKyNSAqd2_aF70KEvk_EjpkTUPj31zqSIhAojYurIobMkJBTNGtgvbk8tkSLlU5A",
             "riot_region": "EUW"
         }
     }
