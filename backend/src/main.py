@@ -145,7 +145,6 @@ class UserLoginRequest:
 class UserRegisterRequest:
     name: str
     password: str
-    confirm_password: str
     summoner_name: str
     region: str
 
@@ -157,9 +156,6 @@ def user_register():
         data = dacite.from_dict(data_class=UserRegisterRequest, data=data)
     except dacite.DaciteError:
         return "", status.BAD_REQUEST
-        
-    if data.password != data.confirm_password:
-        return "confirm password should match password", status.BAD_REQUEST
     
     try:
         summoner = cass.Summoner(name=data.summoner_name, region=data.region)
@@ -175,16 +171,12 @@ def user_register():
         )
         new_user.profile = models.Profile(
             riot_puuid=summoner.puuid,
-            riot_region=data.region,
+            riot_region=data.region
         )
 
-        try:
-            session.add(new_user)
-            session.commit()
-        except Exception as exception: 
-            # The magic needed in order to extract only the important information from the exception... Source: trust me bro!
-            return str(exception).split("\n")[0].split(")")[1], status.BAD_REQUEST
-
+        session.add(new_user)
+        session.commit()
+        
         return new_user.to_dict(), status.OK
 
 
