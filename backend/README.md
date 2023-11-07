@@ -43,11 +43,23 @@ source ./venv/bin/activate
 
 # Configuration
 
-Foloseste contul de riot games din `resurse > cont api` pe discord. Daca atunci
-cand te loghezi iti cere sa intri un cod, scrie-i lui Andrei (Jardan).
+**Trebuie toti sa folosim API key-uri generate de acelasi cont.**
 
-Apoi intra [aici](https://developer.riotgames.com/) ca sa copiezi/actualizezi
-API key-ul.
+<details>
+
+<summary>De ce?</summary>
+
+Pentru ca id-urile pe care le primesti de la API-ul lol pentru un anumit
+summoner (puuid, summoner id, etc.) sunt diferite de la un cont la altul. Este o
+masura de securitate de la Riot games.
+
+</details
+
+Intra pe [site-ul de developer de la riot](https://developer.riotgames.com/).
+Logheaza-te cu contul de riot games din `resurse > cont api` pe discord. Daca
+atunci cand te loghezi iti cere sa intri un cod, scrie-i lui Andrei (Jardan).
+
+De acolo ar trebui sa poti sa copiezi/actualizezi API key-ul.
 
 # Running
 
