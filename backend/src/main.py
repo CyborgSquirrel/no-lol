@@ -182,6 +182,7 @@ def user_register():
             session.add(new_user)
             session.commit()
         except Exception as exception: 
+            # The magic needed in order to extract only the important information from the exception... Source: trust me bro!
             return str(exception).split("\n")[0].split(")")[1], status.BAD_REQUEST
 
         return new_user.to_dict(), status.OK
