@@ -140,8 +140,6 @@ function ProfilePage() {
                 <img style={{ width: "25%"}} src={wave_blue}/>
             </Box>
         </>
-
-
 )
 }
 export default ProfilePage
