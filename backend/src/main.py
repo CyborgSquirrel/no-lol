@@ -79,7 +79,7 @@ class UserDetailView(views.MethodView):
 
                 # 1) check summoner's icon
                 icon = summoner.profile_icon
-                if profile.icon.id != icon.id:
+                if profile.icon is None or profile.icon.id != icon.id:
                     # get the new icon
                     new_icon: models.Icon = session.query(models.Icon).filter_by(id=icon.id).one_or_none()
 
