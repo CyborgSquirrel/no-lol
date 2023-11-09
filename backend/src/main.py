@@ -38,15 +38,6 @@ class UserListView(views.MethodView):
             result = [user.to_dict() for user in users]
             return result
 
-    def post(self):
-        """ Creates a new user. """
-        data = flask.request.json
-        with sqlalchemy.orm.Session(engine) as session:
-            entity = models.User(**data)
-            session.add(entity)
-            session.commit()
-            return "", status.CREATED
-
 
 class UserDetailView(views.MethodView):
     wait_time = timedelta(hours=1)      # time to wait between profile updates
