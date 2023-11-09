@@ -141,6 +141,45 @@ class UserLoginRequest:
     password: str
 
 
+@dataclass
+class UserRegisterRequest:
+    name: str
+    password: str
+    summoner_name: str
+    region: str
+
+@app.post("/user/register")
+def user_register():
+    data = flask.request.json
+
+    try:
+        data = dacite.from_dict(data_class=UserRegisterRequest, data=data)
+    except dacite.DaciteError:
+        return "", status.BAD_REQUEST
+    
+    try:
+        summoner = cass.Summoner(name=data.summoner_name, region=data.region)
+    except ValueError:
+        return "bad region probably", status.BAD_REQUEST
+    if summoner.exists is False:
+        return "summoner does not exist", status.BAD_REQUEST
+        
+    with sqlalchemy.orm.Session(engine) as session:
+        new_user: models.User = models.User(
+            name=data.name,
+            password=data.password
+        )
+        new_user.profile = models.Profile(
+            riot_puuid=summoner.puuid,
+            riot_region=data.region
+        )
+
+        session.add(new_user)
+        session.commit()
+        
+        return new_user.to_dict(), status.OK
+
+
 @app.post("/user/login")
 def user_login():
     data = flask.request.json

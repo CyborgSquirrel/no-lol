@@ -29,7 +29,7 @@ class User(ModelBase):
     __tablename__ = "User"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str]
+    name: Mapped[str] = mapped_column(unique=True)
     password: Mapped[str]
     profile: Mapped["Profile"] = relationship(back_populates="user")
 
@@ -53,7 +53,7 @@ class Profile(ModelBase):
     balance: Mapped[int] = mapped_column(default=0, nullable=False)
     hours_played: Mapped[int] = mapped_column(default=0, nullable=False)
 
-    icon_id: Mapped[int] = mapped_column(ForeignKey("Icon.id"))
+    icon_id: Mapped[int] = mapped_column(ForeignKey("Icon.id"), nullable=True)
     icon: Mapped["Icon"] = relationship()
 
     last_match_updated: Mapped[datetime] = mapped_column(nullable=True)
