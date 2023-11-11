@@ -111,7 +111,7 @@ function ProfilePage() {
                     fontFamily={"Russo One"}
                     variant="h4"
                     color={Colors.WHITE_BLUE}
-                >Hours happier:</Typography>
+                >Time happier:</Typography>
                 <Typography
                     fontFamily={"Russo One"}
                     variant="h2"
