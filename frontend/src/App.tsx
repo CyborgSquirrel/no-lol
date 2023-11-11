@@ -4,10 +4,13 @@ import ProfilePage from "./pages/ProfilePage";
 import {Box, Container} from "@mui/material";
 import {Colors} from "./assets/Colors";
 import React from "react";
+import axios from "axios";
 
 const queryClient = new QueryClient();
 
 function App() {
+    axios.defaults.baseURL = "http://127.0.0.1:5000";
+
     return (
         <QueryClientProvider client={queryClient}>
             <Box sx = {{
