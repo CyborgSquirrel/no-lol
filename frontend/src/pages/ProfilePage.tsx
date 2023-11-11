@@ -49,7 +49,12 @@ function ProfilePage() {
     console.log(data.icon)
 
     return (
-        <>
+        <Box sx={{
+            height: "100vh",
+            width: "100vw",
+            backgroundColor: Colors.RICH_BLACK,
+            overflow: "scroll"
+        }}>
             <Box
                 sx={{
                     display: "flex",
@@ -115,42 +120,45 @@ function ProfilePage() {
             </Container>
 
             <Box sx={{
-                height: "10em",
-                width: "100vw",
-                position: "absolute",
-                bottom: 0,
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "center",
-                alignItems: "flex-end",
-                rowGap: "0",
-                zIndex: "1"
+                height: "5em",
+                bottom: 0
             }}>
-                <img style={{width: "20%"}} src={wave_mov}/>
-                <img style={{width: "20%"}} src={wave_mov}/>
-                <img style={{width: "20%"}} src={wave_mov}/>
-                <img style={{width: "20%"}} src={wave_mov}/>
-                <img style={{width: "20%"}} src={wave_mov}/>
+                <Box sx={{
+                    height: "10em",
+                    width: "100vw",
+                    bottom: 0,
+                    position: "absolute",
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "flex-end",
+                    rowGap: "0",
+                    zIndex: "1"
+                }}>
+                    <img style={{width: "20%"}} src={wave_mov}/>
+                    <img style={{width: "20%"}} src={wave_mov}/>
+                    <img style={{width: "20%"}} src={wave_mov}/>
+                    <img style={{width: "20%"}} src={wave_mov}/>
+                    <img style={{width: "20%"}} src={wave_mov}/>
+                </Box>
+                <Box sx={{
+                    height: "10em",
+                    width: "100vw",
+                    bottom: 0,
+                    display: "flex",
+                    position: "absolute",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "flex-end",
+                    rowGap: "0"
+                }}>
+                    <img style={{width: "25%"}} src={wave_blue}/>
+                    <img style={{width: "25%"}} src={wave_blue}/>
+                    <img style={{width: "25%"}} src={wave_blue}/>
+                    <img style={{width: "25%"}} src={wave_blue}/>
+                </Box>
             </Box>
-            <Box sx={{
-                height: "10em",
-                width: "100vw",
-                position: "absolute",
-                bottom: 0,
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "center",
-                alignItems: "flex-end",
-                rowGap: "0"
-            }}>
-                <img style={{width: "25%"}} src={wave_blue}/>
-                <img style={{width: "25%"}} src={wave_blue}/>
-                <img style={{width: "25%"}} src={wave_blue}/>
-                <img style={{width: "25%"}} src={wave_blue}/>
-            </Box>
-        </>
-
-
+        </Box>
     )
 }
 
