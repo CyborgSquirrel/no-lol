@@ -1,10 +1,11 @@
-// daca response == 200 atunci iau idUser
-// else eroare
-import {Box, FormControl, TextField, InputLabel, Input, InputAdornment, IconButton, Button, Alert, AlertTitle} from "@mui/material";
+import {Box, FormControl, TextField, InputLabel, Input, InputAdornment, IconButton, Button} from "@mui/material";
 import {Visibility, VisibilityOff} from '@mui/icons-material';
 import {Colors} from "../assets/Colors";
+import { Navigate } from "react-router-dom";
 import axios from "axios";
 import React from "react";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function LoginPage(){
     const [showPassword, setShowPassword] = React.useState(false);
@@ -14,9 +15,11 @@ function LoginPage(){
     };
     const [username, setUsername] = React.useState('');
     const [password, setPassword] = React.useState('');
-    const [error, setError] = React.useState('');
-    const [warning, setWarning] = React.useState('');
+    const [loggedIn, setLoggedIn] = React.useState(false);
 
+    if (loggedIn) {
+        return <Navigate to="/profile" />;
+    }
 
     const handleLogin = () => {
 
@@ -26,33 +29,25 @@ function LoginPage(){
         };
 
         if(username === "" || password === ""){
-            setWarning("Username or Password can't be empty");
-            setTimeout(() => {
-                setWarning('');
-            }, 5000);
+            toast.warning("Username or Password can't be empty");
         } else {
             axios.post('/user/login', data)
                 .then((response) => {
-                    const userID = response.data.userID;
+                    const userID = response.data.id;
                     console.log('ID utilizator:', userID);
 
                     // go to ProfilePage
-                    window.location.href = '/profile';
+                    setLoggedIn(true);
                 })
                 .catch((error) => {
                     if (error.response) {
-                        setError(error.response.data);
+                        toast.error(error.response.data);
                     } else {
-                        setError("Nu se poate conecta la server.");
+                        toast.error("Nu se poate conecta la server.");
                     }
-                    setTimeout(() => {
-                        setError('');
-                    }, 5000);
                 });
         }
     };
-
-
 
     return(
         <Box
@@ -135,40 +130,39 @@ function LoginPage(){
                             borderBottomColor: Colors.WHITE_BLUE,
                         },
                     }} variant="standard">
-                        <InputLabel htmlFor="password">Password</InputLabel>
-                        <Input
-                            id="password"
-                            type={showPassword ? 'text' : 'password'}
-                            endAdornment={
-                                <InputAdornment position="end">
-                                    <IconButton
-                                        aria-label="toggle password visibility"
-                                        onClick={handleClickShowPassword}
-                                        onMouseDown={handleMouseDownPassword}
-                                    >
-                                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                                    </IconButton>
-                                </InputAdornment>
-                            }
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
+                    <InputLabel htmlFor="password">Password</InputLabel>
+                    <Input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        endAdornment={
+                            <InputAdornment position="end">
+                                <IconButton
+                                    aria-label="toggle password visibility"
+                                    onClick={handleClickShowPassword}
+                                    onMouseDown={handleMouseDownPassword}
+                                >
+                                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                            </InputAdornment>
+                        }
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
                 </FormControl>
 
                 <br/>
 
                 <Box sx={{
-                        display: 'flex',
-                        justifyContent: 'space-evenly',
-                        margin: '10px 0',
-                    }}
+                    display: 'flex',
+                    justifyContent: 'space-evenly',
+                    margin: '10px 0',
+                }}
                 >
                     <Button variant="outlined"
                             sx={{
                                 width: '100px',
                                 color: Colors.WHITE_BLUE,
                                 borderColor: Colors.WHITE_BLUE,
-
                                 '&:hover': {borderColor: Colors.WHITE_BLUE}
                             }}
                             onClick={handleLogin}
@@ -177,36 +171,8 @@ function LoginPage(){
                     </Button>
                 </Box>
             </Box>
-            {warning && (
-                <Alert
-                    variant="filled"
-                    severity="warning"
-                    sx={{
-                        position: 'absolute',
-                        bottom: '20px',
-                        right: '20px',
-                    }}
-                >
-                    <AlertTitle>Warning</AlertTitle>
-                    <strong>{warning}</strong>
-                </Alert>
-            )}
-            {error && (
-                <Alert
-                    variant="filled"
-                    severity="error"
-                    sx={{
-                        position: 'absolute',
-                        bottom: '20px',
-                        right: '20px',
-                    }}
-                >
-                    <AlertTitle>Error</AlertTitle>
-                    <strong>{error}</strong>
-                </Alert>
-            )}
+            <ToastContainer position="bottom-right" autoClose={5000} theme={"colored"} />
         </Box>
-
     )
 }
 
