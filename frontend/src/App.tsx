@@ -6,11 +6,14 @@ import {BrowserRouter, Routes, Route} from "react-router-dom";
 import {Colors} from "./assets/Colors";
 import React from "react";
 import LoginPage from "./pages/LoginPage";
+import axios from "axios";
 
 const queryClient = new QueryClient();
 
 
 function App() {
+    axios.defaults.baseURL = "http://127.0.0.1:5000";
+
     return (
         // <QueryClientProvider client={queryClient}>
         //     <Box sx = {{
