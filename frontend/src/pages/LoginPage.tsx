@@ -16,13 +16,13 @@ function LoginPage(){
     const [username, setUsername] = React.useState('');
     const [password, setPassword] = React.useState('');
     const [loggedIn, setLoggedIn] = React.useState(false);
+    const [userId, setUserId] = React.useState<number|undefined>();
 
     if (loggedIn) {
-        return <Navigate to="/profile" />;
+        return <Navigate to={`/profile/${userId}`} />;
     }
 
     const handleLogin = () => {
-
         const data = {
             name: username,
             password: password,
@@ -33,8 +33,9 @@ function LoginPage(){
         } else {
             axios.post('/user/login', data)
                 .then((response) => {
-                    const userID = response.data.id;
-                    console.log('ID utilizator:', userID);
+                    const userId = response.data.id;
+                    setUserId(userId);
+                    console.log('ID utilizator:', userId);
 
                     // go to ProfilePage
                     setLoggedIn(true);

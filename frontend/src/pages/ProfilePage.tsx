@@ -13,8 +13,7 @@ import {useState} from "react";
 
 
 function ProfilePage() {
-
-    const {userId} = useParams();
+    const {id} = useParams();
     const [period, setPeriod] = useState("")
     function time(unix: number) {
         let date = DateTime.fromSeconds(unix);
@@ -25,11 +24,12 @@ function ProfilePage() {
     const {isPending, error, data} = useQuery<User>({
         queryKey: ['userData'],
         queryFn: async () => {
-            let data: User = await axios.get('user/by-id/2')
+            let data: User = await axios.get(`user/by-id/${id}`)
                 .then(response => response.data)
 
             data.icon = `http://127.0.0.1:5000/icon/by-id/${data.profile.icon_id}`;
 
+            // TODO: Handle case where last_match_end is null
             time(data.profile.last_match_end)
             setInterval(() => {time(data.profile.last_match_end)}, 10)
 

@@ -35,7 +35,7 @@ function App() {
         <BrowserRouter>
             <Routes>
                 <Route path={"/"} element={<LoginPage/>}></Route>
-                <Route path={"/profile"} element={
+                <Route path={"/profile/:id"} element={
                     <QueryClientProvider client={queryClient}>
                         <Box sx = {{
                             position: "absolute",
