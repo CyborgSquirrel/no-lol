@@ -25,7 +25,7 @@ users = [
         "name": "cstn",
         "password": "pass",
         "profile": {
-            "riot_puuid": "7Va3SJuMDV3ZN-VQc1Fs9g-UlNCrU5XtaK-I8VtVDZnRBFAJYrzYcHbnAqG0-iRBhfn6t9b6vY4hcg",
+            "riot_puuid": "EM3ArU5HIZLIwAMqmbuhgCpZ9NxdOVFbQQ1bTto5yt5HMqXlv6QDeyo4WFsfyID7OPJEOPkbaSUo3Q",
             "riot_region": "EUNE"
         }
     },
