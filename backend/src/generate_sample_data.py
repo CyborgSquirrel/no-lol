@@ -25,7 +25,7 @@ users = [
         "name": "cstn",
         "password": "pass",
         "profile": {
-            "riot_puuid": "EM3ArU5HIZLIwAMqmbuhgCpZ9NxdOVFbQQ1bTto5yt5HMqXlv6QDeyo4WFsfyID7OPJEOPkbaSUo3Q",
+            "riot_name": "NupMaster",
             "riot_region": "EUNE"
         }
     },
@@ -33,10 +33,10 @@ users = [
         "name": "99 9 impulse fm",
         "password": "pass",
         "profile": {
-            "riot_puuid": "Blgfgj-GgVp28saKyNSAqd2_aF70KEvk_EjpkTUPj31zqSIhAojYurIobMkJBTNGtgvbk8tkSLlU5A",
+            "riot_name": "99 9 impulse fm",
             "riot_region": "EUW"
         }
-    }
+    },
 ]
 
 with sqlalchemy.orm.Session(engine) as sess:
@@ -48,7 +48,7 @@ with sqlalchemy.orm.Session(engine) as sess:
         )
 
         # fetch icon
-        summoner = cass.Summoner(puuid=user_data["profile"]["riot_puuid"], region=user_data["profile"]["riot_region"])
+        summoner = cass.Summoner(name=user_data["profile"]["riot_name"], region=user_data["profile"]["riot_region"])
         icon = summoner.profile_icon
 
         # save icon and store in db
@@ -60,7 +60,7 @@ with sqlalchemy.orm.Session(engine) as sess:
 
         # create profile
         user.profile = models.Profile(
-            riot_puuid=user_data["profile"]["riot_puuid"],
+            riot_puuid=summoner.puuid,
             riot_region=user_data["profile"]["riot_region"],
             icon=new_icon
         )
