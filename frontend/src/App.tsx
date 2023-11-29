@@ -1,60 +1,53 @@
 import './App.css';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import ProfilePage from "./pages/ProfilePage";
-import {Box, Container} from "@mui/material";
-import {BrowserRouter, Routes, Route} from "react-router-dom";
-import {Colors} from "./assets/Colors";
-import React from "react";
-import LoginPage from "./pages/LoginPage";
 import axios from "axios";
+import React from "react";
+import {createBrowserRouter, RouterProvider} from "react-router-dom";
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {Box} from "@mui/material";
+import {Colors} from "./assets/Colors";
+import ProfilePage from "./pages/ProfilePage";
+import LoginPage from "./pages/LoginPage";
+import ErrorPage from "./pages/ErrorPage";
+import {BACKEND_API_URL} from "./constants";
 
-const queryClient = new QueryClient();
-
+const router = createBrowserRouter([
+    {
+        path: "/",
+        element: <LoginPage/>,
+        errorElement: <ErrorPage/>
+    },
+    {
+        path: "/profile/:id",
+        element: (
+            <Box sx = {{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100vw",
+                height: "100vh",
+                backgroundColor: Colors.RICH_BLACK,
+                padding: "0",
+                margin: "0"
+            }}>
+                <ProfilePage/>
+            </Box>
+        ),
+        errorElement: <ErrorPage/>
+    }
+]);
 
 function App() {
-    axios.defaults.baseURL = "http://127.0.0.1:5000";
+    // set the backend url
+    axios.defaults.baseURL = BACKEND_API_URL;
+
+    // create a React Query client instance
+    const queryClient = new QueryClient();
 
     return (
-        // <QueryClientProvider client={queryClient}>
-        //     <Box sx = {{
-        //         position: "absolute",
-        //         top: 0,
-        //         left: 0,
-        //         width: "100vw",
-        //         height: "100vh",
-        //         backgroundColor: Colors.RICH_BLACK,
-        //         padding: "0",
-        //         margin: "0"
-        //     }}
-        //     >
-        //         <ProfilePage/>
-        //     </Box>
-        //
-        // </QueryClientProvider>
-
-        <BrowserRouter>
-            <Routes>
-                <Route path={"/"} element={<LoginPage/>}></Route>
-                <Route path={"/profile/:id"} element={
-                    <QueryClientProvider client={queryClient}>
-                        <Box sx = {{
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            width: "100vw",
-                            height: "100vh",
-                            backgroundColor: Colors.RICH_BLACK,
-                            padding: "0",
-                            margin: "0"
-                        }}>
-                            <ProfilePage/>
-                        </Box>
-
-                    </QueryClientProvider>
-                }></Route>
-            </Routes>
-        </BrowserRouter>
-    )
+        <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router}/>
+        </QueryClientProvider>
+    );
 }
 
 export default App;
