@@ -10,6 +10,7 @@ import wave_mov from "../assets/wave_mov.svg"
 import wave_blue from "../assets/wave_blue.svg"
 import {DateTime} from "luxon";
 import {useState} from "react";
+import {BACKEND_API_URL} from "../constants";
 
 
 function ProfilePage() {
@@ -27,26 +28,23 @@ function ProfilePage() {
             let data: User = await axios.get(`user/by-id/${id}`)
                 .then(response => response.data)
 
-            data.icon = `http://127.0.0.1:5000/icon/by-id/${data.profile.icon_id}`;
+            data.icon = `${BACKEND_API_URL}/icon/by-id/${data.profile.icon_id}`;
 
             // TODO: Handle case where last_match_end is null
             time(data.profile.last_match_end)
             setInterval(() => {time(data.profile.last_match_end)}, 10)
 
             return data
-            }
+        }
     })
 
-
-
-    if (isPending)
+    if (isPending) {
         return <Loading/>
-
-    if (error) { // @ts-ignore
-        return <p>An error has occurred: {error.message}</p>
     }
 
-    console.log(data.icon)
+    if (error) {
+        throw error;
+    }
 
     return (
         <Box sx={{
