@@ -1,0 +1,7 @@
+{
+  "email_server": "smtp-mail.outlook.com",
+  "email_port": "587",
+  "email_username": "put the outlook email address here",
+  "email_password": "put the outlook password here",
+  "riot_api_key": "put your api key here"
+}

@@ -1,24 +1,25 @@
 import argparse
 import json
 import pathlib
-from dataclasses import dataclass
-from datetime import datetime, timedelta
-from http import HTTPStatus as status
-
-import cassiopeia as cass
 import dacite
 import flask
 import flask.views as views
 import flask_cors
 import sqlalchemy
 import sqlalchemy.orm
+import cassiopeia as cass
+from flask_mail import Mail, Message
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from http import HTTPStatus as status
 
 import models
 
-# setup flask & sqlalchemy
+# setup flask & sqlalchemy & mail
 app = flask.Flask(__name__)
 engine = sqlalchemy.create_engine("sqlite:///data.db")
 flask_cors.CORS(app)  # get rid of cors
+mail = Mail()
 
 # setup cassiopeia
 cass_config = cass.get_default_config()
@@ -197,7 +198,7 @@ def get_icon(id: int):
         if icon is None:
             return "", status.NOT_FOUND
 
-        # get abolute path
+        # get absolute path
         icon_path = pathlib.Path(icon.path).resolve()
 
         return flask.send_file(icon_path, "image/png")
@@ -208,13 +209,24 @@ def main(args):
     with open(args.config_file) as f:
         config = json.load(f)
     cass.set_riot_api_key(config["riot_api_key"])
-    
+
     # routes
     app.add_url_rule("/users", view_func=UserListView.as_view("user_list"))
     app.add_url_rule("/user/by-id/<int:id>", view_func=UserDetailView.as_view("user_detail"))
 
-    # create db & run flask
+    # create db
     models.ModelBase.metadata.create_all(engine)
+
+    # init mail
+    app.config["MAIL_SERVER"] = config["email_server"]
+    app.config["MAIL_PORT"] = config["email_port"]
+    app.config["MAIL_USE_TLS"] = True
+    app.config["MAIL_USERNAME"] = config["email_username"]
+    app.config["MAIL_PASSWORD"] = config["email_password"]
+    app.config["MAIL_DEFAULT_SENDER"] = config["email_username"]
+    mail.init_app(app)
+
+    # run flask
     app.run(host="0.0.0.0", port=5000, debug=True)
 
 
