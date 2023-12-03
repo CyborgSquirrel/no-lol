@@ -1,8 +1,8 @@
 import json
 from datetime import datetime
 
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import ForeignKey, CheckConstraint, case, select
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, column_property, object_session
 
 
 class ModelBase(DeclarativeBase):
@@ -43,11 +43,55 @@ class User(ModelBase):
 
 class Friendship(ModelBase):
     __tablename__ = "Friendship"
+    __table_args__ = (
+        CheckConstraint("smaller_user_id < bigger_user_id"),
+    )
 
-    sender_id: Mapped[int] = mapped_column(ForeignKey("User.id"), nullable=False, primary_key=True)
-    receiver_id: Mapped[int] = mapped_column(ForeignKey("User.id"), nullable=False, primary_key=True)
+    # This ensured uniqueness so that there can not be a friendship between personA - personB AND personB - personA
+    smaller_user_id: Mapped[int] = mapped_column(ForeignKey("User.id"), nullable=False, primary_key=True)
+    bigger_user_id: Mapped[int] = mapped_column(ForeignKey("User.id"), nullable=False, primary_key=True)
+    smaller_user: Mapped["User"] = relationship("User", foreign_keys=[smaller_user_id])
+    bigger_user: Mapped["User"] = relationship("User", foreign_keys=[bigger_user_id])
 
     pending: Mapped[bool] = mapped_column(nullable=False, default=True)
+
+    sender_is_smaller_id: Mapped[bool] = mapped_column(nullable=False)
+    sender_id: Mapped[int] = column_property(
+        case(
+            (sender_is_smaller_id, smaller_user_id),
+            else_=bigger_user_id,
+        )
+    )
+    
+    @property
+    def sender(self):
+        return object_session(self).scalar(select(User).where(User.id == self.sender_id))
+
+    receiver_id: Mapped[int] = column_property(
+        case(
+            (sender_is_smaller_id, bigger_user_id),
+            else_=smaller_user_id,
+        )
+    )
+    
+    @property
+    def receiver(self):
+        return object_session(self).scalar(select(User).where(User.id == self.receiver_id))
+
+
+    def to_dict(self):
+        return {
+            "smaller_user_id": self.smaller_user_id,
+            "smaller_user": self.smaller_user.to_dict(),
+            "bigger_user_id": self.smaller_user_id,
+            "bigger_user": self.smaller_user.to_dict(),
+            "pending": self.pending,
+            "sender_is_smaller_id": self.sender_is_smaller_id,
+            "sender_id": self.sender_id,
+            "receiver_id": self.receiver_id,
+            "sender": self.sender.to_dict(),
+            "receiver": self.receiver.to_dict(),
+        }
 
 
 class Profile(ModelBase):
