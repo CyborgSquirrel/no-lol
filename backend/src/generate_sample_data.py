@@ -40,12 +40,14 @@ users = [
     },
 ]
 
+
 friendships = [
     {
         "sender_name": "cstn",
         "receiver_name": "99 9 impulse fm",
     }
 ]
+
 
 with sqlalchemy.orm.Session(engine) as sess:
     for user_data in users:
