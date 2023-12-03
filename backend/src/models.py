@@ -50,8 +50,6 @@ class Friendship(ModelBase):
     pending: Mapped[bool] = mapped_column(nullable=False, default=True)
 
 
-
-
 class Profile(ModelBase):
     __tablename__ = "Profile"
 
