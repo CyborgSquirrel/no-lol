@@ -44,10 +44,12 @@ class User(ModelBase):
 class Friendship(ModelBase):
     __tablename__ = "Friendship"
 
-    sender_id: Mapped[int] = mapped_column(nullable=False, primary_key=True)
-    receiver_id: Mapped[int] = mapped_column(nullable=False, primary_key=True)
+    sender_id: Mapped[int] = mapped_column(ForeignKey("User.id"), nullable=False, primary_key=True)
+    receiver_id: Mapped[int] = mapped_column(ForeignKey("User.id"), nullable=False, primary_key=True)
 
     pending: Mapped[bool] = mapped_column(nullable=False, default=True)
+
+
 
 
 class Profile(ModelBase):
