@@ -83,12 +83,10 @@ class Friendship(ModelBase):
         return {
             "smaller_user_id": self.smaller_user_id,
             "smaller_user": self.smaller_user.to_dict(),
-            "bigger_user_id": self.smaller_user_id,
-            "bigger_user": self.smaller_user.to_dict(),
+            "bigger_user_id": self.bigger_user_id,
+            "bigger_user": self.bigger_user.to_dict(),
             "pending": self.pending,
             "sender_is_smaller_id": self.sender_is_smaller_id,
-            "sender_id": self.sender_id,
-            "receiver_id": self.receiver_id,
             "sender": self.sender.to_dict(),
             "receiver": self.receiver.to_dict(),
         }
