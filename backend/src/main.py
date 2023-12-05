@@ -191,7 +191,7 @@ def friendship_accept():
     data = flask.request.json
 
     try:
-        data = dacite.from_dict(data_class=CreateFriendshipRequest, data=data)
+        data = dacite.from_dict(data_class=AcceptFriendshipRequest, data=data)
     except dacite.DaciteError:
         return "", status.BAD_REQUEST
 
@@ -213,7 +213,7 @@ def friendship_remove():
     data = flask.request.json
 
     try:
-        data = dacite.from_dict(data_class=CreateFriendshipRequest, data=data)
+        data = dacite.from_dict(data_class=RemoveFriendshipRequest, data=data)
     except dacite.DaciteError:
         return "", status.BAD_REQUEST
 
