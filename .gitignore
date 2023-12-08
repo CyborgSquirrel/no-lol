@@ -28,3 +28,5 @@ build
 *.sln
 *.sw?
 
+# Prettier FE config
+*.prettierrc
