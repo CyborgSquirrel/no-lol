@@ -59,6 +59,7 @@ function RegisterPage() {
                 })
                 .catch((error) => {
                     if (error.response) {
+<<<<<<< HEAD
                         // maybe not the best approach
                         if (error.response.data.name_already_exists) {
                             toast.error("Name already exists!");
@@ -69,6 +70,9 @@ function RegisterPage() {
                         } else {
                             toast.error(error.response.data);
                         }
+=======
+                        toast.error(error.response.data);
+>>>>>>> 18e4bd6852ed129a2c028a4bd94d2317a809cca9
                     } else {
                         toast.error("Nu se poate conecta la server.");
                     }
