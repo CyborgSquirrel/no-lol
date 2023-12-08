@@ -59,7 +59,16 @@ function RegisterPage() {
                 })
                 .catch((error) => {
                     if (error.response) {
-                        toast.error(error.response.data);
+                        // maybe not the best approach
+                        if (error.response.data.name_already_exists) {
+                            toast.error("Name already exists!");
+                        } else if (
+                            error.response.data.summoner_already_exists
+                        ) {
+                            toast.error("Summoner already exists!");
+                        } else {
+                            toast.error(error.response.data);
+                        }
                     } else {
                         toast.error("Nu se poate conecta la server.");
                     }
