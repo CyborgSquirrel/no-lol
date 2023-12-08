@@ -16,7 +16,7 @@ import React from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-function LoginPage() {
+function RegisterPage() {
   const [showPassword, setShowPassword] = React.useState(false);
   const handleClickShowPassword = () => setShowPassword((show) => !show);
   const handleMouseDownPassword = (
@@ -24,33 +24,35 @@ function LoginPage() {
   ) => {
     event.preventDefault();
   };
+
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [loggedIn, setLoggedIn] = React.useState(false);
-  const [userId, setUserId] = React.useState<number | undefined>();
+  const [summonerName, setSummonerName] = React.useState("");
+  const [region, setRegion] = React.useState("");
 
-  if (loggedIn) {
-    return <Navigate to={`/profile/${userId}`} />;
-  }
-
-  const handleLogin = () => {
+  const handleRegister = () => {
     const data = {
       name: username,
       password: password,
+      summoner_name: summonerName,
+      region: region,
     };
 
-    if (username === "" || password === "") {
-      toast.warning("Username or Password can't be empty");
+    if (
+      username === "" ||
+      password === "" ||
+      summonerName === "" ||
+      region === ""
+    ) {
+      toast.warning("Toate field-urile trebuie completate.");
     } else {
       axios
-        .post("/user/login", data)
+        .post("/user/register", data)
         .then((response) => {
-          const userId = response.data.id;
-          setUserId(userId);
-          console.log("ID utilizator:", userId);
+          console.log("Inregistrare realizata cu success:", response.data);
 
-          // go to ProfilePage
-          setLoggedIn(true);
+          // Back to home page
+          return <Navigate to={"/"} />;
         })
         .catch((error) => {
           if (error.response) {
@@ -91,7 +93,7 @@ function LoginPage() {
             fontWeight: "bold",
           }}
         >
-          Login
+          Register
         </div>
 
         <br />
@@ -175,6 +177,70 @@ function LoginPage() {
 
         <br />
 
+        <TextField
+          sx={{
+            width: "250px",
+            "& label": {
+              color: Colors.WHITE_BLUE,
+            },
+            "& .MuiInputBase-input": {
+              color: Colors.WHITE_BLUE,
+            },
+            "& label.Mui-focused": {
+              color: Colors.WHITE_BLUE,
+            },
+            "& .MuiInput-underline:before": {
+              borderBottomColor: Colors.WHITE_BLUE,
+            },
+            "& .MuiInput-underline:after": {
+              borderBottomColor: Colors.WHITE_BLUE,
+            },
+            "&:hover .MuiInput-underline:before": {
+              borderBottomColor: Colors.WHITE_BLUE,
+            },
+          }}
+          id="summonerName"
+          label="Summoner Name"
+          type="search"
+          variant="standard"
+          value={summonerName}
+          onChange={(e) => setSummonerName(e.target.value)}
+        />
+
+        <br />
+
+        <TextField
+          sx={{
+            width: "250px",
+            "& label": {
+              color: Colors.WHITE_BLUE,
+            },
+            "& .MuiInputBase-input": {
+              color: Colors.WHITE_BLUE,
+            },
+            "& label.Mui-focused": {
+              color: Colors.WHITE_BLUE,
+            },
+            "& .MuiInput-underline:before": {
+              borderBottomColor: Colors.WHITE_BLUE,
+            },
+            "& .MuiInput-underline:after": {
+              borderBottomColor: Colors.WHITE_BLUE,
+            },
+            "&:hover .MuiInput-underline:before": {
+              borderBottomColor: Colors.WHITE_BLUE,
+            },
+          }}
+          id="region"
+          label="Region"
+          type="search"
+          variant="standard"
+          value={region}
+          onChange={(e) => setRegion(e.target.value)}
+        />
+
+        <br />
+
         <Box
           sx={{
             display: "flex",
@@ -192,15 +258,13 @@ function LoginPage() {
               borderColor: Colors.WHITE_BLUE,
               "&:hover": { borderColor: Colors.WHITE_BLUE },
             }}
-            onClick={handleLogin}
+            onClick={handleRegister}
           >
-            Login
+            Register
           </Button>
 
-          {/* Horizontal line */}
           <hr style={{ width: "100%", border: "1px solid white" }} />
 
-          {/* Register text with hyperlink */}
           <Box
             sx={{
               textAlign: "center",
@@ -208,9 +272,9 @@ function LoginPage() {
               color: Colors.WHITE_BLUE,
             }}
           >
-            No account?{" "}
-            <Link to="/register" style={{ color: Colors.WHITE_BLUE }}>
-              Register here
+            Already have an account?{" "}
+            <Link to="/" style={{ color: Colors.WHITE_BLUE }}>
+              Login here
             </Link>
             .
           </Box>
@@ -225,4 +289,4 @@ function LoginPage() {
   );
 }
 
-export default LoginPage;
+export default RegisterPage;
