@@ -1,6 +1,7 @@
 """
 Insert some sample data into the database, for testing purposes.
 """
+
 import argparse
 import json
 import pathlib
@@ -10,7 +11,7 @@ import sqlalchemy.orm
 
 import models
 
-argparser = argparse.ArgumentParser()
+argparser = argparse.ArgumentParser(description=__doc__)
 argparser.add_argument("config_file", type=pathlib.Path)
 argparser.add_argument("--force", action="store_true", default=False)
 args = argparser.parse_args()
