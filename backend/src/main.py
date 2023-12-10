@@ -1,19 +1,41 @@
 import argparse
+import dataclasses
 import json
 import pathlib
+import typing
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from http import HTTPStatus as status
+
+import cassiopeia as cass
 import dacite
 import flask
 import flask.views as views
 import flask_cors
 import sqlalchemy
 import sqlalchemy.orm
-import cassiopeia as cass
 from flask_mail import Mail, Message
-from dataclasses import dataclass
-from datetime import datetime, timedelta
-from http import HTTPStatus as status
 
 import models
+
+
+@dataclass
+class Config:
+    email_server: str
+    email_port: str
+    email_username: str
+    email_password: str
+    riot_api_key: str
+
+    def default() -> typing.Self:
+        return Config(
+            email_server="smtp-mail.outlook.com",
+            email_port="587",
+            email_username="put the outlook email address here",
+            email_password="put the outlook password here",
+            riot_api_key="put your api key here",
+        )
+
 
 # setup flask & sqlalchemy & mail
 app = flask.Flask(__name__)
@@ -337,9 +359,32 @@ def get_icon(id: int):
 
 def main(args):
     # config file
-    with open(args.config_file) as f:
-        config = json.load(f)
-    cass.set_riot_api_key(config["riot_api_key"])
+    if args.config_file.name != "config.json":
+        better_config_path = args.config_file.parent / "config.json"
+        print(
+            "Config file may only be named 'config.json'. This is so that"
+            " it can easily be prevented from being checked into the repo"
+            " (so that api keys/passwords don't get leaked)."
+            "\n"
+            "\n"
+            f"Please give a config path such as '{better_config_path}'."
+        )
+        exit(1)
+    
+    if args.config_file.exists():
+        with args.config_file.open() as f:
+            config = dacite.from_dict(Config, json.load(f))
+    else:
+        config = Config.default()
+        with args.config_file.open("w") as f:
+            json.dump(dataclasses.asdict(config), f, indent=4)
+        print(
+            f"Config file did not exist at path '{args.config_file}', so it"
+            " was automatically created. Please fill in the values."
+        )
+        exit(1)
+
+    cass.set_riot_api_key(config.riot_api_key)
 
     # routes
     app.add_url_rule("/users", view_func=UserListView.as_view("user_list"))
@@ -349,12 +394,12 @@ def main(args):
     models.ModelBase.metadata.create_all(engine)
 
     # init mail
-    app.config["MAIL_SERVER"] = config["email_server"]
-    app.config["MAIL_PORT"] = config["email_port"]
+    app.config["MAIL_SERVER"] = config.email_server
+    app.config["MAIL_PORT"] = config.email_port
     app.config["MAIL_USE_TLS"] = True
-    app.config["MAIL_USERNAME"] = config["email_username"]
-    app.config["MAIL_PASSWORD"] = config["email_password"]
-    app.config["MAIL_DEFAULT_SENDER"] = config["email_username"]
+    app.config["MAIL_USERNAME"] = config.email_username
+    app.config["MAIL_PASSWORD"] = config.email_password
+    app.config["MAIL_DEFAULT_SENDER"] = config.email_username
     mail.init_app(app)
 
     # run flask
@@ -364,6 +409,6 @@ def main(args):
 if __name__ == "__main__":
     # cli args
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("config_file")
+    argparser.add_argument("config_file", type=pathlib.Path)
 
     main(argparser.parse_args())
