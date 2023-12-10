@@ -1,21 +1,31 @@
 """
 Insert some sample data into the database, for testing purposes.
 """
+
 import argparse
 import json
 import pathlib
-import models
-import sqlalchemy.orm
-from sqlalchemy import select
-import cassiopeia as cass
 
-argparser = argparse.ArgumentParser()
-argparser.add_argument("config_file")
+import cassiopeia as cass
+import sqlalchemy.orm
+
+import models
+
+argparser = argparse.ArgumentParser(description=__doc__)
+argparser.add_argument("config_file", type=pathlib.Path)
+argparser.add_argument("--force", action="store_true", default=False)
 args = argparser.parse_args()
 
-engine = sqlalchemy.create_engine("sqlite:///data.db")
+db_path = pathlib.Path("data.db")
+if db_path.exists():
+    if args.force:
+        db_path.unlink()
+    else:
+        raise ValueError(f"File '{db_path}' already exists. Rerun the script with '--force' to overwrite it")
+
+engine = sqlalchemy.create_engine(f"sqlite:///{db_path}")
 models.ModelBase.metadata.create_all(engine)
-with open(args.config_file) as f:
+with args.config_file.open() as f:
     config = json.load(f)
 cass.set_riot_api_key(config["riot_api_key"])
 
@@ -38,6 +48,14 @@ users = [
             "riot_region": "EUW"
         }
     },
+    {
+        "name": "stefan",
+        "password": "pass",
+        "profile": {
+            "riot_name": "ykm",
+            "riot_region": "EUW"
+        }
+    },
 ]
 
 
@@ -45,6 +63,12 @@ friendships = [
     {
         "sender_name": "cstn",
         "receiver_name": "99 9 impulse fm",
+        "pending": False,
+    },
+    {
+        "sender_name": "cstn",
+        "receiver_name": "stefan",
+        "pending": True,
     }
 ]
 
@@ -88,7 +112,7 @@ with sqlalchemy.orm.Session(engine) as sess:
         friendship = models.Friendship(
             smaller_user_id=sender.id,
             bigger_user_id=receiver.id,
-            pending=True,
+            pending=friendship_data["pending"],
             sender_is_smaller_id=True,
         )
 

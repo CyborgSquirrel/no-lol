@@ -33,9 +33,51 @@ ICONS_PATH = f"{STATIC_PATH}/icons"
 
 class UserListView(views.MethodView):
     def get(self):
-        """ Returns the list of all users. """
+        """Return the list of all users. Applies filters if supplied.
+        
+        can filter by:
+        - name: all returned users will have string `name` in their name
+        - friend_of: all returned users will be friends with the user whose id is `friend_of`
+        """
+
+        # TODO: Some kind of pagination?
+
+        args_name = flask.request.args.get("name")
+        args_friend_of = flask.request.args.get("friend_of")
+        
         with sqlalchemy.orm.Session(engine) as session:
-            users = session.query(models.User).all()
+            if args_friend_of is None:
+                users = session.query(models.User)
+            else:
+                # get ids of all the friends
+                user_ids = sqlalchemy.union(
+                    sqlalchemy.select(models.Friendship.smaller_user_id.label("id"))
+                    .where(
+                        sqlalchemy.and_(
+                            models.Friendship.bigger_user_id == args_friend_of,
+                            sqlalchemy.not_(models.Friendship.pending),
+                        )
+                    ),
+
+                    sqlalchemy.select(models.Friendship.bigger_user_id.label("id"))
+                    .where(
+                        sqlalchemy.and_(
+                            models.Friendship.smaller_user_id == args_friend_of,
+                            sqlalchemy.not_(models.Friendship.pending),
+                        )
+                    ),
+                )
+               
+                users = (
+                    session.query(models.User)
+                    .join(user_ids, models.User.id == user_ids.c.id)
+                )
+
+            if args_name is not None:
+                users = users.where(models.User.name.contains(args_name))
+           
+            users = users.all()
+
             result = [user.to_dict() for user in users]
             return result
 
