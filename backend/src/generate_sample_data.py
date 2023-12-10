@@ -6,6 +6,7 @@ import json
 import pathlib
 import models
 import sqlalchemy.orm
+from sqlalchemy import select
 import cassiopeia as cass
 
 argparser = argparse.ArgumentParser()
@@ -39,6 +40,15 @@ users = [
     },
 ]
 
+
+friendships = [
+    {
+        "sender_name": "cstn",
+        "receiver_name": "99 9 impulse fm",
+    }
+]
+
+
 with sqlalchemy.orm.Session(engine) as sess:
     for user_data in users:
         # create user
@@ -65,5 +75,23 @@ with sqlalchemy.orm.Session(engine) as sess:
             icon=new_icon
         )
         sess.add(user)
+
+    sess.commit()
+
+    for friendship_data in friendships:
+        sender: models.User = sess.query(models.User).filter_by(name=friendship_data["sender_name"]).one()
+        receiver: models.User = sess.query(models.User).filter_by(name=friendship_data["receiver_name"]).one()
+        
+        if sender.id > receiver.id:
+            sender, receiver = receiver, sender
+
+        friendship = models.Friendship(
+            smaller_user_id=sender.id,
+            bigger_user_id=receiver.id,
+            pending=True,
+            sender_is_smaller_id=True,
+        )
+
+        sess.add(friendship)
 
     sess.commit()

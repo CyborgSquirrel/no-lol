@@ -140,6 +140,95 @@ class UserRegisterRequest:
     summoner_name: str
     region: str
 
+@dataclass
+class CreateFriendshipRequest:
+    sender_id: int
+    receiver_id: int
+
+
+@dataclass
+class AcceptFriendshipRequest:
+    sender_id: int
+    receiver_id: int
+
+
+@dataclass 
+class RemoveFriendshipRequest:
+    sender_id: int
+    receiver_id: int
+
+
+@app.post("/friendship/create")
+def friendship_create():
+    data = flask.request.json
+
+    try:
+        data = dacite.from_dict(data_class=CreateFriendshipRequest, data=data)
+    except dacite.DaciteError:
+        return "", status.BAD_REQUEST
+
+    with sqlalchemy.orm.Session(engine) as session:
+        sender_smaller = True
+
+        if data.sender_id > data.receiver_id:
+            sender_smaller = False
+
+        new_friendship: models.Friendship = models.Friendship(
+            smaller_user_id=data.sender_id if sender_smaller else data.receiver_id,
+            bigger_user_id=data.receiver_id if sender_smaller else data.sender_id,
+            sender_is_smaller_id=sender_smaller,
+            pending=True,
+        )
+
+        session.add(new_friendship)
+        session.commit()
+        
+        return new_friendship.to_dict(), status.OK
+
+
+@app.put("/friendship/accept")
+def friendship_accept():
+    data = flask.request.json
+
+    try:
+        data = dacite.from_dict(data_class=AcceptFriendshipRequest, data=data)
+    except dacite.DaciteError:
+        return "", status.BAD_REQUEST
+
+    with sqlalchemy.orm.Session(engine) as session:
+
+        smaller_id, bigger_id = data.sender_id, data.receiver_id 
+        if smaller_id > bigger_id:
+            smaller_id, bigger_id = bigger_id, smaller_id
+        friendship = session.get(models.Friendship, (smaller_id, bigger_id))
+        friendship.pending = False
+
+        session.commit()
+        
+        return friendship.to_dict(), status.OK
+
+
+@app.delete("/friendship/remove")
+def friendship_remove():
+    data = flask.request.json
+
+    try:
+        data = dacite.from_dict(data_class=RemoveFriendshipRequest, data=data)
+    except dacite.DaciteError:
+        return "", status.BAD_REQUEST
+
+    with sqlalchemy.orm.Session(engine) as session:
+
+        smaller_id, bigger_id = data.sender_id, data.receiver_id 
+        if smaller_id > bigger_id:
+            smaller_id, bigger_id = bigger_id, smaller_id
+        
+        session.query(models.Friendship).filter_by(smaller_user_id=smaller_id, bigger_user_id=bigger_id).delete()
+        session.commit()
+        
+        return "", status.OK
+
+
 @app.post("/user/register")
 def user_register():
     data = flask.request.json
