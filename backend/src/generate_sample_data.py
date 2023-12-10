@@ -48,6 +48,14 @@ users = [
             "riot_region": "EUW"
         }
     },
+    {
+        "name": "stefan",
+        "password": "pass",
+        "profile": {
+            "riot_name": "ykm",
+            "riot_region": "EUW"
+        }
+    },
 ]
 
 
@@ -55,6 +63,12 @@ friendships = [
     {
         "sender_name": "cstn",
         "receiver_name": "99 9 impulse fm",
+        "pending": False,
+    },
+    {
+        "sender_name": "cstn",
+        "receiver_name": "stefan",
+        "pending": True,
     }
 ]
 
@@ -98,7 +112,7 @@ with sqlalchemy.orm.Session(engine) as sess:
         friendship = models.Friendship(
             smaller_user_id=sender.id,
             bigger_user_id=receiver.id,
-            pending=True,
+            pending=friendship_data["pending"],
             sender_is_smaller_id=True,
         )
 

@@ -52,10 +52,20 @@ class UserListView(views.MethodView):
                 # get ids of all the friends
                 user_ids = sqlalchemy.union(
                     sqlalchemy.select(models.Friendship.smaller_user_id.label("id"))
-                    .where(models.Friendship.bigger_user_id == args_friend_of),
+                    .where(
+                        sqlalchemy.and_(
+                            models.Friendship.bigger_user_id == args_friend_of,
+                            sqlalchemy.not_(models.Friendship.pending),
+                        )
+                    ),
 
                     sqlalchemy.select(models.Friendship.bigger_user_id.label("id"))
-                    .where(models.Friendship.smaller_user_id == args_friend_of),
+                    .where(
+                        sqlalchemy.and_(
+                            models.Friendship.smaller_user_id == args_friend_of,
+                            sqlalchemy.not_(models.Friendship.pending),
+                        )
+                    ),
                 )
                
                 users = (
