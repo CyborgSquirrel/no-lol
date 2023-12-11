@@ -19,23 +19,11 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function RegisterPage() {
-    const [showPassword, setShowPassword] = React.useState(false);
-    const handleClickShowPassword = () => setShowPassword((show) => !show);
-    const handleMouseDownPassword = (
-        event: React.MouseEvent<HTMLButtonElement>
-    ) => {
-        event.preventDefault();
-    };
-
     const [username, setUsername] = React.useState("");
     const [password, setPassword] = React.useState("");
     const [retypePassword, setRetypePassword] = React.useState("");
     const [summonerName, setSummonerName] = React.useState("");
     const [region, setRegion] = React.useState("");
-
-    const handleRetypePasswordChange = (event: {
-        target: { value: React.SetStateAction<string> };
-    }) => setRetypePassword(event.target.value);
 
     const handleRegister = () => {
         const data = {
@@ -227,22 +215,7 @@ function RegisterPage() {
                     <InputLabel htmlFor="password">Password</InputLabel>
                     <Input
                         id="password"
-                        type={showPassword ? "text" : "password"}
-                        endAdornment={
-                            <InputAdornment position="end">
-                                <IconButton
-                                    aria-label="toggle password visibility"
-                                    onClick={handleClickShowPassword}
-                                    onMouseDown={handleMouseDownPassword}
-                                >
-                                    {showPassword ? (
-                                        <VisibilityOff />
-                                    ) : (
-                                        <Visibility />
-                                    )}
-                                </IconButton>
-                            </InputAdornment>
-                        }
+                        type={"password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
@@ -282,7 +255,7 @@ function RegisterPage() {
                         id="retypePassword"
                         type="password"
                         value={retypePassword}
-                        onChange={handleRetypePasswordChange}
+                        onChange={(e) => setRetypePassword(e.target.value)}
                     />
                 </FormControl>
 
