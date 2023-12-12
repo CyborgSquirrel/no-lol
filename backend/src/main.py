@@ -200,6 +200,24 @@ class RemoveFriendshipRequest:
     receiver_id: int
 
 
+@app.get("/user/by-id/<int:user_id>/friendship/pending")
+def user_friendship_get_pending(user_id: int):
+    with sqlalchemy.orm.Session(engine) as session:
+        friendships = (
+            session.query(models.Friendship)
+            .where(
+                sqlalchemy.and_(
+                    models.Friendship.receiver_id == user_id,
+                    models.Friendship.pending,
+                )
+            )
+            .all()
+        )
+       
+        result = [friendship.to_dict() for friendship in friendships]
+        return result
+
+    
 @app.get("/user/by-id/<int:user_id>/friendship/with-user/by-id/<int:other_user_id>")
 def user_friendship_get_with_other_user(user_id: int, other_user_id: int):
     with sqlalchemy.orm.Session(engine) as session:
