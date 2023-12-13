@@ -1,11 +1,16 @@
-import {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {Button, Container, List, ListItem, Typography} from "@mui/material";
 import {Colors} from "../assets/Colors";
 import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
+import {Navigate, useNavigate, useParams} from "react-router-dom";
+import {User} from "../models/User";
+import axios from "axios";
 
 // @ts-ignore
-function FriendRequest({name, onAccept, onDecline}) {
+function FriendRequest({user, other, name, onAccept, onDecline}) {
+    const navigate = useNavigate();
+
     return (
         <div
             style={{
@@ -23,7 +28,18 @@ function FriendRequest({name, onAccept, onDecline}) {
                     justifyContent: "left",
                     color: Colors.WHITE_BLUE,
                     fontFamily: "Russo One"
-                }}>{name}</div>
+                }}>
+                <a
+                    href="#"
+                    style={{textDecoration: 'none', color: 'inherit'}}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        navigate(`/profile/${user}/${other}`);
+                    }}
+                >
+                    {name}
+                </a>
+            </div>
             <div
                 style={{
                     display: 'flex',
@@ -65,12 +81,31 @@ function FriendRequest({name, onAccept, onDecline}) {
 
 }
 
-export function NotifList() {
-    const [items, setItems] = useState(['Item 1', 'Item 2', 'Item 3']);
-    const handleItemClick = (index: number) => {
-        const newItems = [...items];
-        newItems.splice(index, 1);
-        setItems(newItems);
+export function NotifList({userID, list, fetchNotifList}:
+                              { userID: string, list: User[], fetchNotifList: (id: string) => unknown; }) {
+    const [items, setItems] = useState(list || []);
+
+    useEffect(() => {
+        // update the component when the 'list' changes
+        setItems(list || []);
+    }, [list]);
+
+    const handleAcceptClick = async (index: number) => {
+        axios.put(`/friendship/accept`, {sender_id: index, receiver_id: parseInt(userID, 10)}).then(
+            response => {
+                fetchNotifList(userID);
+                return response;
+            }
+        )
+    };
+    const handleRejectClick = async (index: number) => {
+        // TODO: make put work
+        axios.delete(`/friendship/remove`, {data: {sender_id: index, receiver_id: parseInt(userID)}}).then(
+            response => {
+                fetchNotifList(userID);
+                return response;
+            }
+        )
     };
 
     return (
@@ -96,9 +131,11 @@ export function NotifList() {
                         key={index}
                     >
                         <FriendRequest
-                            name={item}
-                            onAccept={() => handleItemClick(index)}
-                            onDecline={() => handleItemClick(index)}
+                            user={userID}
+                            other={item.id}
+                            name={item.name}
+                            onAccept={() => handleAcceptClick(item.id)}
+                            onDecline={() => handleRejectClick(item.id)}
                         />
                     </ListItem>
                 ))
