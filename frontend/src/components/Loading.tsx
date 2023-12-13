@@ -1,4 +1,4 @@
-import {Box, CircularProgress, LinearProgress} from "@mui/material";
+import {Box, LinearProgress} from "@mui/material";
 
 export function Loading() {
     return (
