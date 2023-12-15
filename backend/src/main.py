@@ -203,6 +203,10 @@ class RemoveFriendshipRequest:
 @app.get("/user/by-id/<int:user_id>/friendship/pending")
 def user_friendship_get_pending(user_id: int):
     with sqlalchemy.orm.Session(engine) as session:
+        user = session.query(models.User).filter_by(id=user_id).one_or_none()
+        if user is None:
+            return "", status.NOT_FOUND
+        
         friendships = (
             session.query(models.Friendship)
             .where(
