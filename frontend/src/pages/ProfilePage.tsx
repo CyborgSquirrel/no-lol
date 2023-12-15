@@ -1,5 +1,11 @@
 import {useParams} from "react-router-dom";
-import {Avatar, Box, Container, Typography} from "@mui/material";
+import {
+    Avatar,
+    Box,
+    Container,
+    IconButton,
+    Typography
+} from "@mui/material";
 import {User} from "../models/User";
 import {Loading} from "../components/Loading"
 import {useQuery} from "@tanstack/react-query";
@@ -11,10 +17,14 @@ import wave_blue from "../assets/wave_blue.svg"
 import {DateTime} from "luxon";
 import {useState} from "react";
 import {BACKEND_API_URL} from "../constants";
+import {Search, Group} from "@mui/icons-material";
+import UserModal from "../pages/UserModal";
 
 
 function ProfilePage() {
     const {id} = useParams();
+    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+    const [isFriendsModalOpen, setIsFriendsModalOpen] = useState(false);
     const [period, setPeriod] = useState("")
     function time(unix: number) {
         let date = DateTime.fromSeconds(unix);
@@ -156,6 +166,41 @@ function ProfilePage() {
                     <img style={{width: "25%"}} src={wave_blue}/>
                 </Box>
             </Box>
+            
+            <IconButton
+                onClick={() => setIsUserModalOpen(true)}
+                sx={{
+                    position: "absolute",
+                    top: "20px",
+                    right: "40px",
+                    backgroundColor: Colors.WHITE_BLUE,
+                    "&:hover": {
+                        backgroundColor: Colors.FOLLY,
+                    },
+                }}
+                title="Search by username"
+            >
+                <Search style={{ fontSize: 32, color: Colors.RICH_BLACK }} />
+            </IconButton>
+            <UserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} byName={true} userId={id}/>
+
+            <IconButton
+                onClick={() => setIsFriendsModalOpen(true)}
+                sx={{
+                    position: "absolute",
+                    top: "20px",
+                    right: "100px",
+                    backgroundColor: Colors.WHITE_BLUE,
+                    "&:hover": {
+                        backgroundColor: Colors.FOLLY,
+                    },
+                }}
+                title="Search"
+            >
+                <Group style={{ fontSize: 32, color: Colors.RICH_BLACK }} />
+            </IconButton>
+            <UserModal isOpen={isFriendsModalOpen} onClose={() => setIsFriendsModalOpen(false)} byName={false} userId={id}/>
+
         </Box>
     )
 }
