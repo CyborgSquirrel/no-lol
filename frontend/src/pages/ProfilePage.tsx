@@ -195,7 +195,7 @@ function ProfilePage() {
                         backgroundColor: Colors.FOLLY,
                     },
                 }}
-                title="Search in friends list"
+                title="Search"
             >
                 <Group style={{ fontSize: 32, color: Colors.RICH_BLACK }} />
             </IconButton>
