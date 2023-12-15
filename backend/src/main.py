@@ -221,6 +221,33 @@ def user_friendship_get_pending(user_id: int):
         result = [friendship.to_dict() for friendship in friendships]
         return result
 
+@app.get("/user/by-id/<int:user_id>/friendship/with-user/by-id/<int:other_user_id>")
+def user_friendship_get_with_other_user(user_id: int, other_user_id: int):
+    with sqlalchemy.orm.Session(engine) as session:
+        friendship = (
+            session.query(models.Friendship)
+            .where(
+                sqlalchemy.or_(
+                    sqlalchemy.and_(
+                        models.Friendship.smaller_user_id == user_id,
+                        models.Friendship.bigger_user_id == other_user_id,
+                    ),
+                    sqlalchemy.and_(
+                        models.Friendship.smaller_user_id == other_user_id,
+                        models.Friendship.bigger_user_id == user_id,
+                    ),
+                )
+            )
+            .one_or_none()
+        )
+
+        if friendship is None:
+            friendship = dict()
+        else:
+            friendship = friendship.to_dict()
+       
+        return friendship
+
 
 @app.post("/friendship/create")
 def friendship_create():
