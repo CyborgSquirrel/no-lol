@@ -347,7 +347,17 @@ def user_register():
         )
 
         session.add(new_user)
-        session.commit()
+        try:
+            session.commit()
+        except sqlalchemy.exc.IntegrityError as ex:
+            args = set(ex.args)
+            # TODO: Better way to check for these? This will break if we change
+            # the constraints.
+            response = dict(
+                name_already_exists="(sqlite3.IntegrityError) UNIQUE constraint failed: User.name" in args,
+                summoner_already_exists="(sqlite3.IntegrityError) UNIQUE constraint failed: Profile.riot_puuid, Profile.riot_region" in args,
+            )
+            return response, status.BAD_REQUEST
         
         return new_user.to_dict(), status.OK
 
