@@ -58,13 +58,26 @@ function UserModal({ isOpen, onClose, byName, userId }:SearchModalProps) {
     const [searchText, setSearchText] = useState("");
     const [searchResults, setSearchResults] = useState<User[]>([]);
     const title = byName ? 'Search (by name)' : 'Search (in friend list)';
+    const label = byName ? 'Search' : 'Search your friends';
 
     const handleSearchChange = (event: { target: { value: any; }; }) => {
         const newValue = event.target.value;
         setSearchText(newValue);
 
-        const searchEndpoint = byName ? `/users?name=${newValue}`
-                                            : `/users?friend_of=${userId}&name=${newValue}`;
+        const searchParams = (
+            byName
+            ?
+            new URLSearchParams({
+                name: newValue,
+            })
+            :
+            new URLSearchParams({
+                name: newValue,
+                friend_of: typeof userId === "string" ? userId : "", // NOTE(andreij): this sucks yes
+            })
+        );
+
+        const searchEndpoint = `/users?${searchParams}`;
         if (newValue) {
             axios.get(searchEndpoint).then(response => setSearchResults(response.data))
         } else {
@@ -149,7 +162,7 @@ function UserModal({ isOpen, onClose, byName, userId }:SearchModalProps) {
                             },
                         }
                     }}
-                    label="Search your friends"
+                    label={label}
                     type="search"
                     autoComplete={"off"}
                     value={searchText}
