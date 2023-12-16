@@ -64,8 +64,20 @@ function UserModal({ isOpen, onClose, byName, userId }:SearchModalProps) {
         const newValue = event.target.value;
         setSearchText(newValue);
 
-        const searchEndpoint = byName ? `/users?name=${newValue}`
-                                            : `/users?friend_of=${userId}&name=${newValue}`;
+        const searchParams = (
+            byName
+            ?
+            new URLSearchParams({
+                name: newValue,
+            })
+            :
+            new URLSearchParams({
+                name: newValue,
+                friend_of: typeof userId === "string" ? userId : "", // NOTE(andreij): this sucks yes
+            })
+        );
+
+        const searchEndpoint = `/users?${searchParams}`;
         if (newValue) {
             axios.get(searchEndpoint).then(response => setSearchResults(response.data))
         } else {
