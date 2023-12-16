@@ -10,6 +10,7 @@ import LoginPage from "./pages/LoginPage";
 import ErrorPage from "./pages/ErrorPage";
 import { BACKEND_API_URL } from "./constants";
 import RegisterPage from "./pages/RegisterPage";
+import OtherProfilePage from "./pages/OtherProfilePage";
 
 const router = createBrowserRouter([
   {
@@ -17,26 +18,42 @@ const router = createBrowserRouter([
     element: <LoginPage />,
     errorElement: <ErrorPage />,
   },
-  {
-    path: "/profile/:id",
-    element: (
-      <Box
-        sx={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          backgroundColor: Colors.RICH_BLACK,
-          padding: "0",
-          margin: "0",
-        }}
-      >
-        <ProfilePage />
-      </Box>
-    ),
-    errorElement: <ErrorPage />,
-  },
+    {
+        path: "/profile/:logged",
+        element: (
+            <Box sx = {{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100vw",
+                height: "100vh",
+                backgroundColor: Colors.RICH_BLACK,
+                padding: "0",
+                margin: "0"
+            }}>
+                <ProfilePage/>
+            </Box>
+        ),
+        errorElement: <ErrorPage/>
+    },
+    {
+        path: "/profile/:logged/:other",
+        element: (
+            <Box sx = {{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100vw",
+                height: "100vh",
+                backgroundColor: Colors.RICH_BLACK,
+                padding: "0",
+                margin: "0"
+            }}>
+                <OtherProfilePage/>
+            </Box>
+        ),
+        errorElement: <ErrorPage/>
+    },
   {
     path: "/register",
     element: (
