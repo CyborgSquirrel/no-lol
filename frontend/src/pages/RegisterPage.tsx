@@ -73,7 +73,7 @@ function RegisterPage() {
     const regions = [
         "NA",
         "EUW",
-        "EUN",
+        "EUNE",
         "KR",
         "BR",
         "JP",

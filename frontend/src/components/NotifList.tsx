@@ -6,6 +6,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import {Navigate, useNavigate, useParams} from "react-router-dom";
 import {User} from "../models/User";
 import axios from "axios";
+import { useQueryClient } from "@tanstack/react-query";
 
 // @ts-ignore
 function FriendRequest({user, other, name, onAccept, onDecline}) {
@@ -83,6 +84,8 @@ function FriendRequest({user, other, name, onAccept, onDecline}) {
 
 export function NotifList({userID, list, fetchNotifList}:
                               { userID: string, list: User[], fetchNotifList: (id: string) => unknown; }) {
+    const queryClient = useQueryClient();
+
     const [items, setItems] = useState(list || []);
 
     useEffect(() => {
@@ -91,21 +94,15 @@ export function NotifList({userID, list, fetchNotifList}:
     }, [list]);
 
     const handleAcceptClick = async (index: number) => {
-        axios.put(`/friendship/accept`, {sender_id: index, receiver_id: parseInt(userID, 10)}).then(
-            response => {
-                fetchNotifList(userID);
-                return response;
-            }
-        )
+        await axios.put(`/friendship/accept`, {sender_id: index, receiver_id: parseInt(userID, 10)});
+        fetchNotifList(userID);
+        queryClient.invalidateQueries({ queryKey: ["userSearch"] });
     };
     const handleRejectClick = async (index: number) => {
         // TODO: make put work
-        axios.delete(`/friendship/remove`, {data: {sender_id: index, receiver_id: parseInt(userID)}}).then(
-            response => {
-                fetchNotifList(userID);
-                return response;
-            }
-        )
+        await axios.delete(`/friendship/remove`, {data: {sender_id: index, receiver_id: parseInt(userID)}});
+        fetchNotifList(userID);
+        queryClient.invalidateQueries({ queryKey: ["userSearch"] });
     };
 
     return (

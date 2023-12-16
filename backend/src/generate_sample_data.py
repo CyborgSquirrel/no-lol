@@ -69,7 +69,7 @@ friendships = [
         "sender_name": "cstn",
         "receiver_name": "stefan",
         "pending": True,
-    }
+    },
 ]
 
 
