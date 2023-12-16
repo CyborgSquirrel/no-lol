@@ -58,6 +58,7 @@ function UserModal({ isOpen, onClose, byName, userId }:SearchModalProps) {
     const [searchText, setSearchText] = useState("");
     const [searchResults, setSearchResults] = useState<User[]>([]);
     const title = byName ? 'Search (by name)' : 'Search (in friend list)';
+    const label = byName ? 'Search' : 'Search your friends';
 
     const handleSearchChange = (event: { target: { value: any; }; }) => {
         const newValue = event.target.value;
@@ -149,7 +150,7 @@ function UserModal({ isOpen, onClose, byName, userId }:SearchModalProps) {
                             },
                         }
                     }}
-                    label="Search your friends"
+                    label={label}
                     type="search"
                     autoComplete={"off"}
                     value={searchText}
