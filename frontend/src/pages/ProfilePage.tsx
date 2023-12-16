@@ -1,5 +1,5 @@
 import {useNavigate, useParams} from "react-router-dom";
-import {Avatar, Box, Button, Container, List, ListItem, Popper, Typography} from "@mui/material";
+import {Avatar, Box, Button, Container, List, ListItem, Popper, SvgIconClasses, Typography} from "@mui/material";
 import {User} from "../models/User";
 import {Loading} from "../components/Loading"
 import {useQuery} from "@tanstack/react-query";
@@ -16,9 +16,40 @@ import HomeIcon from '@mui/icons-material/Home';
 import AddIcon from '@mui/icons-material/Add';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
 import Badge from '@mui/material/Badge';
 import Tooltip from '@mui/material/Tooltip';
 import {BACKEND_API_URL} from "../constants";
+import {Padding} from "@mui/icons-material";
+
+
+
+
+const CustomIconButton = ({children, onClick } : { children: any, onClick: () => void}) => {
+    return (
+        <Button
+            sx={{
+                alignSelf: 'flex-start',
+                position: 'relative',
+                padding: '10px',
+                width: '60px',
+                backgroundColor: Colors.ISLE_BLUE, // You can customize these styles as needed
+                color: "white",
+                borderRadius: '5px',
+                border: `3px solid ${Colors.ULTRA_VIOLET}`,
+                cursor: 'pointer',
+                '&:hover': {
+                    backgroundColor: Colors.ULTRA_VIOLET,
+                },
+            }}
+            type="button"
+            onClick={onClick}
+        >
+            {children}
+        </Button>
+    );
+};
 
 function ProfilePage() {
     const navigate = useNavigate();
@@ -54,7 +85,8 @@ function ProfilePage() {
     // if you are visiting a profile page different from the logged user, use 'other' id
     // @ts-ignore
     const [id] = useState<string>(other === undefined ? logged : other);
-    const [areFriends, setAreFriends] = useState(false);
+    const [friendshipStatus, setFriendshipStatus] =
+        useState<{areFriends:boolean, pending: boolean, receiver: string, sender: string}>({areFriends: false, pending: false, receiver: "", sender: ""});
 
     const {isPending, error, data} = useQuery<User>({
         queryKey: ['userData', id],
@@ -69,7 +101,11 @@ function ProfilePage() {
             if (other !== undefined) {
                 let data = await axios.get(`/user/by-id/${logged}/friendship/with-user/by-id/${other}`)
                     .then(response => response.data);
-                setAreFriends(Object.keys(data).length !== 0)
+                console.log(logged);
+                if (Object.keys(data).length !== 0) {
+                    console.log({receiver: data.receiver.id.toString(), sender: data.receiver.id.toString()})
+                    setFriendshipStatus( {areFriends: true, pending: data.pending, receiver: data.receiver.id.toString(), sender: data.sender.id.toString()});
+                }
             }
 
             // TODO: Handle case where last_match_end is null
@@ -91,6 +127,10 @@ function ProfilePage() {
     if (error) {
         throw error;
     }
+
+    console.log(friendshipStatus);
+    // useEffect(() => {
+    // }, [friendshipStatus]);
 
     return (
         <Box sx={{
@@ -125,60 +165,72 @@ function ProfilePage() {
                     }}
                 >
                     {/*friend request button*/}
-                    {other !== undefined && !areFriends
-                        && <Button sx={{
-                        alignSelf: 'flex-start',
-                        position: 'relative',
-                        // marginTop: "40px",
-                        top: "10px",
-                        left: '0',
-                        padding: '10px',
-                        width: '60px',
-                        backgroundColor: Colors.ISLE_BLUE,
-                        color: "white",
-                        borderRadius: '5px',
-                        border: `3px solid ${Colors.ULTRA_VIOLET}`,
-                        cursor: 'pointer',
-                        '&:hover': {
-                            backgroundColor: Colors.ULTRA_VIOLET,
-                        },
-                    }} aria-describedby={id}
-                       type="button"
-                       onClick={() => {
-                            // @ts-ignore
-                           axios.post(`/friendship/create`, {sender_id: parseInt(logged), receiver_id: parseInt(other)})
-                               .then(() => {setAreFriends(true);})
-                        }}>
-                        <PersonAddIcon/>
-                    </Button>}
+                    {other !== undefined && !friendshipStatus.areFriends &&
+                        <CustomIconButton
+                            onClick={ () => {
+                                // @ts-ignore
+                                axios.post(`/friendship/create`, {sender_id: parseInt(logged), receiver_id: parseInt(other)})
+                                    .then(() => {
+                                        // @ts-ignore
+                                        setFriendshipStatus({areFriends: true, pending: true, receiver: other, sender: logged});})
+                            }}
+                        >
+                            <PersonAddIcon/>
+                        </CustomIconButton>}
 
                     {/*friend remove button*/}
-                    {other !== undefined && areFriends
-                        && <Button sx={{
-                            alignSelf: 'flex-start',
-                            position: 'relative',
-                            // marginTop: "40px",
-                            top: "10px",
-                            left: '0',
-                            padding: '10px',
-                            width: '60px',
-                            backgroundColor: Colors.ISLE_BLUE,
-                            color: "white",
-                            borderRadius: '5px',
-                            border: `3px solid ${Colors.ULTRA_VIOLET}`,
-                            cursor: 'pointer',
-                            '&:hover': {
-                                backgroundColor: Colors.ULTRA_VIOLET,
-                            },
-                        }} aria-describedby={id}
-                                   type="button"
-                                   onClick={() => {
-                                       // @ts-ignore
-                                       axios.delete(`/friendship/remove`, {data: {sender_id: parseInt(logged), receiver_id: parseInt(other)}})
-                                           .then(() => {setAreFriends(false);})
-                                   }}>
+                    {other !== undefined && friendshipStatus.areFriends && friendshipStatus.sender == logged &&
+                        <CustomIconButton
+                            onClick={ () => {
+                                // @ts-ignore
+                                axios.delete(`/friendship/remove`, {data: {sender_id: parseInt(logged), receiver_id: parseInt(other)}})
+                                    .then(() => {setFriendshipStatus({areFriends: false, pending: false, receiver: "", sender: ""})})
+                            }}
+                        >
                             <PersonRemoveIcon/>
-                        </Button>}
+                        </CustomIconButton>}
+
+                    {/*friend accept/reject or remove button*/}
+                    {other !== undefined && friendshipStatus.areFriends && friendshipStatus.receiver == logged
+                        && (!friendshipStatus.pending
+                            ?
+                            <CustomIconButton
+                                onClick={ () => {
+                                    // @ts-ignore
+                                    axios.delete(`/friendship/remove`, {data: {sender_id: parseInt(logged), receiver_id: parseInt(other)}})
+                                        .then(() => {setFriendshipStatus({areFriends: false, pending: false, receiver: "", sender: ""})})
+                                }}
+                            >
+                                <PersonRemoveIcon/>
+                            </CustomIconButton>
+
+                    :
+                        <Box sx={{
+                            display:"flex",
+                            flexDirection: "row",
+                            alignSelf: "flex-start",
+                            justifyContent: 'space-between',
+                            width: "150px",
+                        }}>
+                            <CustomIconButton
+                                onClick={ () => {
+                                    // @ts-ignore
+                                    axios.put(`/friendship/accept`, {sender_id: parseInt(logged), receiver_id: parseInt(other)})
+                                        .then(() => {setFriendshipStatus({areFriends: true, pending: false, receiver: logged, sender: other})})
+                                }}
+                            >
+                                <CheckIcon/>
+                            </CustomIconButton>
+                            <CustomIconButton
+                                onClick={ () => {
+                                    // @ts-ignore
+                                    axios.delete(`/friendship/remove`, {data: {sender_id: parseInt(logged), receiver_id: parseInt(other)}})
+                                        .then(() => {setFriendshipStatus({areFriends: false, pending: false, receiver: "", sender: ""})})
+                                }}
+                            >
+                                <CloseIcon/>
+                            </CustomIconButton>
+                        </Box>)}
 
                     {/*personal and inger pazitor photo*/}
                     <Container
