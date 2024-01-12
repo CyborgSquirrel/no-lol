@@ -35,6 +35,7 @@ users = [
     {
         "name": "cstn",
         "password": "pass",
+        "email": "cstn@example.com",
         "profile": {
             "riot_name": "NupMaster",
             "riot_region": "EUNE"
@@ -43,6 +44,7 @@ users = [
     {
         "name": "99 9 impulse fm",
         "password": "pass",
+        "email": "stefan@example.com",
         "profile": {
             "riot_name": "99 9 impulse fm",
             "riot_region": "EUW"
@@ -51,6 +53,7 @@ users = [
     {
         "name": "stefan",
         "password": "pass",
+        "email": "stefancelmare@example.com",
         "profile": {
             "riot_name": "ykm",
             "riot_region": "EUW"
@@ -79,6 +82,7 @@ with sqlalchemy.orm.Session(engine) as sess:
         user = models.User(
             name=user_data["name"],
             password=user_data["password"],
+            email=user_data["email"],
         )
 
         # fetch icon
