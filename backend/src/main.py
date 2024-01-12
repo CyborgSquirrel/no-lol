@@ -181,6 +181,7 @@ class UserRegisterRequest:
     password: str
     summoner_name: str
     region: str
+    email: str
 
 @dataclass
 class CreateFriendshipRequest:
@@ -339,7 +340,8 @@ def user_register():
     with sqlalchemy.orm.Session(engine) as session:
         new_user: models.User = models.User(
             name=data.name,
-            password=data.password
+            password=data.password,
+            email=data.email,
         )
         new_user.profile = models.Profile(
             riot_puuid=summoner.puuid,
@@ -356,6 +358,7 @@ def user_register():
             response = dict(
                 name_already_exists="(sqlite3.IntegrityError) UNIQUE constraint failed: User.name" in args,
                 summoner_already_exists="(sqlite3.IntegrityError) UNIQUE constraint failed: Profile.riot_puuid, Profile.riot_region" in args,
+                email_already_exists="(sqlite3.IntegrityError) UNIQUE constraint failed: User.email" in args,
             )
             return response, status.BAD_REQUEST
         

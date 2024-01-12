@@ -23,6 +23,7 @@ function RegisterPage() {
     const [password, setPassword] = React.useState("");
     const [retypePassword, setRetypePassword] = React.useState("");
     const [summonerName, setSummonerName] = React.useState("");
+    const [email, setEmail] = React.useState("");
     const [region, setRegion] = React.useState("");
 
     const handleRegister = () => {
@@ -31,10 +32,12 @@ function RegisterPage() {
             password: password,
             summoner_name: summonerName,
             region: region,
+            email: email,
         };
 
         if (
             username === "" ||
+            email === "" ||
             password === "" ||
             retypePassword === "" ||
             summonerName === "" ||
@@ -60,6 +63,10 @@ function RegisterPage() {
                             error.response.data.summoner_already_exists
                         ) {
                             toast.error("Summoner already exists!");
+                        } else if (
+                            error.response.data.email_already_exists
+                        ) {
+                            toast.error("Email already exists!");
                         } else {
                             toast.error(error.response.data);
                         }
@@ -183,6 +190,38 @@ function RegisterPage() {
                     variant="standard"
                     value={summonerName}
                     onChange={(e) => setSummonerName(e.target.value)}
+                />
+
+                <br />
+
+                <TextField
+                    sx={{
+                        width: "250px",
+                        "& label": {
+                            color: Colors.WHITE_BLUE,
+                        },
+                        "& .MuiInputBase-input": {
+                            color: Colors.WHITE_BLUE,
+                        },
+                        "& label.Mui-focused": {
+                            color: Colors.WHITE_BLUE,
+                        },
+                        "& .MuiInput-underline:before": {
+                            borderBottomColor: Colors.WHITE_BLUE,
+                        },
+                        "& .MuiInput-underline:after": {
+                            borderBottomColor: Colors.WHITE_BLUE,
+                        },
+                        "&:hover .MuiInput-underline:before": {
+                            borderBottomColor: Colors.WHITE_BLUE,
+                        },
+                    }}
+                    id="email"
+                    label="Email"
+                    type="email"
+                    variant="standard"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                 />
 
                 <br />
