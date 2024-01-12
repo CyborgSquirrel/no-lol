@@ -6,7 +6,8 @@ import CheckIcon from '@mui/icons-material/Check';
 import {Navigate, useNavigate, useParams} from "react-router-dom";
 import {User} from "../models/User";
 import axios from "axios";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNotificationsQuery } from "../common";
 
 // @ts-ignore
 function FriendRequest({user, other, name, onAccept, onDecline}) {
@@ -82,26 +83,21 @@ function FriendRequest({user, other, name, onAccept, onDecline}) {
 
 }
 
-export function NotifList({userID, list, fetchNotifList}:
-                              { userID: string, list: User[], fetchNotifList: (id: string) => unknown; }) {
+export function NotifList({userID}: { userID: string }) {
     const queryClient = useQueryClient();
 
-    const [items, setItems] = useState(list || []);
-
-    useEffect(() => {
-        // update the component when the 'list' changes
-        setItems(list || []);
-    }, [list]);
+    const notificationsQuery = useNotificationsQuery(userID);
+    const notificationsList = notificationsQuery.data;
 
     const handleAcceptClick = async (index: number) => {
         await axios.put(`/friendship/accept`, {sender_id: index, receiver_id: parseInt(userID, 10)});
-        fetchNotifList(userID);
+        queryClient.invalidateQueries({ queryKey: ["notificationList", userID] });
         queryClient.invalidateQueries({ queryKey: ["userSearch"] });
     };
     const handleRejectClick = async (index: number) => {
         // TODO: make put work
         await axios.delete(`/friendship/remove`, {data: {sender_id: index, receiver_id: parseInt(userID)}});
-        fetchNotifList(userID);
+        queryClient.invalidateQueries({ queryKey: ["notificationList", userID] });
         queryClient.invalidateQueries({ queryKey: ["userSearch"] });
     };
 
@@ -112,7 +108,7 @@ export function NotifList({userID, list, fetchNotifList}:
             border: `5px solid ${Colors.ULTRA_VIOLET}`,
             margin: "5px"
         }}>
-            {items.length === 0 ? (
+            {notificationsList.length === 0 ? (
                 <ListItem>
                     <Typography
                         style={{color: Colors.WHITE_BLUE}}
@@ -120,7 +116,7 @@ export function NotifList({userID, list, fetchNotifList}:
                     >No Requests</Typography>
                 </ListItem>
             ) : (
-                items.map((item, index) => (
+                notificationsList.map((item, index) => (
                     <ListItem
                         sx={{
                             margin: "0",
@@ -129,10 +125,10 @@ export function NotifList({userID, list, fetchNotifList}:
                     >
                         <FriendRequest
                             user={userID}
-                            other={item.id}
-                            name={item.name}
-                            onAccept={() => handleAcceptClick(item.id)}
-                            onDecline={() => handleRejectClick(item.id)}
+                            other={item.content.id}
+                            name={item.content.name}
+                            onAccept={() => handleAcceptClick(item.content.id)}
+                            onDecline={() => handleRejectClick(item.content.id)}
                         />
                     </ListItem>
                 ))

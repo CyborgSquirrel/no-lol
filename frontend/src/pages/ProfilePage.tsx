@@ -21,6 +21,7 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import Badge from '@mui/material/Badge';
 import Tooltip from '@mui/material/Tooltip';
+import { useNotificationsQuery } from "../common";
 
 enum FriendshipState {
     Pending,
@@ -49,6 +50,8 @@ function ProfilePage() {
     const open = Boolean(anchorEl);
     const pid = open ? 'simple-popper' : undefined;
 
+    const notificationsQuery = loggedInUserId === undefined ? undefined : useNotificationsQuery(loggedInUserId);
+    const notificationsList = notificationsQuery === undefined ? undefined : notificationsQuery.data;
 
     // calculate period since last played
     const [period, setPeriod] = useState("")
@@ -59,14 +62,6 @@ function ProfilePage() {
         setPeriod(now.diff(date, ['minutes', 'seconds', "hours", "days"]).toFormat("dd : hh : mm : ss"))
     }
 
-    // get request list for logged user
-    const [requestList, setRequestList] = useState([])
-    const fetchRequestList = async (id: string | undefined) => {
-        const response = await axios.get(`user/by-id/${loggedInUserId}/friendship/pending`);
-        const data = response.data.map((item: { sender: User }) => item.sender);
-        setRequestList(data);
-    };
-
     // get user data
     const userQuery = useQuery<User>({
         queryKey: ['userData', pageUserId, loggedInUserId],
@@ -76,11 +71,6 @@ function ProfilePage() {
 
             // take create the request for the profile photo
             data.icon = `${BACKEND_API_URL}/icon/by-id/${data.profile.icon_id}`;
-
-            // check if they are friends
-            if (loggedInUserId !== undefined) {
-                fetchRequestList(loggedInUserId);
-            }
 
             return data;
         }
@@ -296,7 +286,7 @@ function ProfilePage() {
                     type="button" onClick={openRequestList}
                 >
                     <Badge
-                        badgeContent={requestList.length}
+                        badgeContent={notificationsList === undefined ? 0 : notificationsList.length}
                         sx={{
                             "& .MuiBadge-badge": {
                                 color: Colors.WHITE_BLUE,
@@ -310,7 +300,7 @@ function ProfilePage() {
                 <Popper id={pid} open={open} anchorEl={anchorEl} placement={"bottom-end"}>
                     <NotifList
                     //@ts-ignore
-                    userID={loggedInUserId} list={requestList} fetchNotifList={fetchRequestList}/>
+                    userID={loggedInUserId}/>
                 </Popper></>)
 
                 // home button to return to self profile page

@@ -1,17 +1,19 @@
 import argparse
+import dataclasses
 import json
 import pathlib
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from http import HTTPStatus as status
+
+import cassiopeia as cass
 import dacite
 import flask
 import flask.views as views
 import flask_cors
 import sqlalchemy
 import sqlalchemy.orm
-import cassiopeia as cass
 from flask_mail import Mail, Message
-from dataclasses import dataclass
-from datetime import datetime, timedelta
-from http import HTTPStatus as status
 
 import models
 
@@ -146,6 +148,7 @@ class UserDetailView(views.MethodView):
                 try:
                     last_match = match_history[0]
                     if profile.last_match_id != last_match.id:
+                        print(last_match.participants)
                         participant = next((p for p in last_match.participants if p.summoner.puuid == profile.riot_puuid), None)
                         if participant is None:
                             # this should not happen
@@ -201,8 +204,21 @@ class RemoveFriendshipRequest:
     receiver_id: int
 
 
-@app.get("/user/by-id/<int:user_id>/friendship/pending")
-def user_friendship_get_pending(user_id: int):
+@dataclass
+class PendingFriendshipNotification:
+    id: int
+    name: str
+
+
+@dataclass
+class Notification:
+    kind: str
+    content: PendingFriendshipNotification
+
+
+@app.get("/user/by-id/<int:user_id>/notifications")
+def user_get_notifications(user_id: int):
+    notifications = []
     with sqlalchemy.orm.Session(engine) as session:
         user = session.query(models.User).filter_by(id=user_id).one_or_none()
         if user is None:
@@ -218,9 +234,23 @@ def user_friendship_get_pending(user_id: int):
             )
             .all()
         )
-       
-        result = [friendship.to_dict() for friendship in friendships]
-        return result
+
+        for friendship in friendships:
+            notifications.append(
+                Notification(
+                    kind="pending_friendship",
+                    content=PendingFriendshipNotification(
+                        id=friendship.sender_id,
+                        name=friendship.sender.name,
+                    ),
+                )
+            )
+    notifications = [
+        dataclasses.asdict(notification)
+        for notification in notifications
+    ]
+    return notifications
+
 
 @app.get("/user/by-id/<int:user_id>/friendship/with-user/by-id/<int:other_user_id>")
 def user_friendship_get_with_other_user(user_id: int, other_user_id: int):
