@@ -6,6 +6,7 @@ import {Colors} from "../assets/Colors";
 import {useState} from "react";
 import axios from "axios";
 import {HighlightOffRounded} from "@mui/icons-material";
+import { useQuery } from "@tanstack/react-query";
 
 function UserListInterface(user: User) {
     let icon = `${BACKEND_API_URL}/icon/by-id/${user.profile.icon_id}`;
@@ -56,38 +57,44 @@ interface SearchModalProps {
 }
 function UserModal({ isOpen, onClose, byName, userId }:SearchModalProps) {
     const [searchText, setSearchText] = useState("");
-    const [searchResults, setSearchResults] = useState<User[]>([]);
     const title = byName ? 'Search (by name)' : 'Search (in friend list)';
     const label = byName ? 'Search' : 'Search your friends';
+
+    const {isPending, error, data} = useQuery<User[]>({
+        queryKey: ['userSearch', searchText, userId, byName],
+        initialData: [],
+        queryFn: async () => {
+            const searchParams = (
+                byName
+                ?
+                new URLSearchParams({
+                    name: searchText,
+                })
+                :
+                new URLSearchParams({
+                    name: searchText,
+                    friend_of: typeof userId === "string" ? userId : "", // NOTE(andreij): this sucks yes
+                })
+            );
+
+            const searchEndpoint = `/users?${searchParams}`;
+            const response = await axios.get(searchEndpoint);
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                return [];
+            }
+        }
+    });
+    const searchResults = data;
 
     const handleSearchChange = (event: { target: { value: any; }; }) => {
         const newValue = event.target.value;
         setSearchText(newValue);
-
-        const searchParams = (
-            byName
-            ?
-            new URLSearchParams({
-                name: newValue,
-            })
-            :
-            new URLSearchParams({
-                name: newValue,
-                friend_of: typeof userId === "string" ? userId : "", // NOTE(andreij): this sucks yes
-            })
-        );
-
-        const searchEndpoint = `/users?${searchParams}`;
-        if (newValue) {
-            axios.get(searchEndpoint).then(response => setSearchResults(response.data))
-        } else {
-            setSearchResults([]);
-        }
     };
 
     if(!isOpen && searchText !== '') {
         setSearchText('');
-        setSearchResults([]);
     }
 
     return (

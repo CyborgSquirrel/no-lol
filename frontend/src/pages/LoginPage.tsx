@@ -51,6 +51,7 @@ function LoginPage() {
 
                     // go to ProfilePage
                     setLoggedIn(true);
+                    sessionStorage.userId = userId;
                 })
                 .catch((error) => {
                     if (error.response) {

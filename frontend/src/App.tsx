@@ -19,7 +19,7 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
   },
     {
-        path: "/profile/:logged",
+        path: "/profile/:id",
         element: (
             <Box sx = {{
                 position: "absolute",
@@ -36,24 +36,24 @@ const router = createBrowserRouter([
         ),
         errorElement: <ErrorPage/>
     },
-    {
-        path: "/profile/:logged/:other",
-        element: (
-            <Box sx = {{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100vw",
-                height: "100vh",
-                backgroundColor: Colors.RICH_BLACK,
-                padding: "0",
-                margin: "0"
-            }}>
-                <OtherProfilePage/>
-            </Box>
-        ),
-        errorElement: <ErrorPage/>
-    },
+    // {
+    //     path: "/profile/:logged/:other",
+    //     element: (
+    //         <Box sx = {{
+    //             position: "absolute",
+    //             top: 0,
+    //             left: 0,
+    //             width: "100vw",
+    //             height: "100vh",
+    //             backgroundColor: Colors.RICH_BLACK,
+    //             padding: "0",
+    //             margin: "0"
+    //         }}>
+    //             <ProfilePage/>
+    //         </Box>
+    //     ),
+    //     errorElement: <ErrorPage/>
+    // },
   {
     path: "/register",
     element: (
