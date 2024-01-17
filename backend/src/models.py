@@ -38,6 +38,7 @@ class User(ModelBase):
         return {
             "id": self.id,
             "name": self.name,
+            "email": self.email,
             "profile": self.profile.to_dict()
         }
 
@@ -63,6 +64,8 @@ class Friendship(ModelBase):
             else_=bigger_user_id,
         )
     )
+
+    buddies: Mapped[bool] = mapped_column(nullable=False, default=False)
     
     @property
     def sender(self):
@@ -79,12 +82,12 @@ class Friendship(ModelBase):
     def receiver(self):
         return object_session(self).scalar(select(User).where(User.id == self.receiver_id))
 
-
     def to_dict(self):
         return {
             "pending": self.pending,
             "sender": self.sender.to_dict(),
             "receiver": self.receiver.to_dict(),
+            "buddies": self.buddies
         }
 
 
@@ -97,21 +100,15 @@ class Profile(ModelBase):
     user_id: Mapped[int] = mapped_column(ForeignKey("User.id"), nullable=False)
     user: Mapped["User"] = relationship(back_populates="profile")
 
-    balance: Mapped[int] = mapped_column(default=0, nullable=False)
-    hours_played: Mapped[int] = mapped_column(default=0, nullable=False)
-
     icon_id: Mapped[int] = mapped_column(ForeignKey("Icon.id"), nullable=True)
     icon: Mapped["Icon"] = relationship()
 
-    last_match_updated: Mapped[datetime] = mapped_column(nullable=True)
     last_match_id: Mapped[int] = mapped_column(nullable=True)
     last_match_end: Mapped[datetime] = mapped_column(nullable=True)
 
     def to_dict(self):
         return {
             "region": self.riot_region,
-            "balance": self.balance,
-            "hours_played": self.hours_played,
             "icon_id": self.icon_id,
             "last_match_end": int(self.last_match_end.timestamp()) if self.last_match_id is not None else None
         }
