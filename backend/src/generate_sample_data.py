@@ -31,20 +31,20 @@ cass.set_riot_api_key(config["riot_api_key"])
 
 
 users = [
-    # Thank u Costin for letting me use your account here :))
-    {
-        "name": "cstn",
-        "password": "pass",
-        "email": "cstn@example.com",
-        "profile": {
-            "riot_name": "NupMaster",
-            "riot_region": "EUNE"
-        }
-    },
+    # # Thank u Costin for letting me use your account here :))
+    # {
+    #     "name": "cstn",
+    #     "password": "pass",
+    #     "email": "cstn@example.com",
+    #     "profile": {
+    #         "riot_name": "NupMaster",
+    #         "riot_region": "EUNE"
+    #     }
+    # },
     {
         "name": "99 9 impulse fm",
         "password": "pass",
-        "email": "stefan@example.com",
+        "email": "leagueofrehab@outlook.com",
         "profile": {
             "riot_name": "99 9 impulse fm",
             "riot_region": "EUW"
@@ -53,7 +53,7 @@ users = [
     {
         "name": "stefan",
         "password": "pass",
-        "email": "stefancelmare@example.com",
+        "email": "put_an_email_address@example.com",
         "profile": {
             "riot_name": "ykm",
             "riot_region": "EUW"
@@ -64,14 +64,10 @@ users = [
 
 friendships = [
     {
-        "sender_name": "cstn",
+        "sender_name": "stefan",
         "receiver_name": "99 9 impulse fm",
         "pending": False,
-    },
-    {
-        "sender_name": "cstn",
-        "receiver_name": "stefan",
-        "pending": True,
+        "buddies": True,
     },
 ]
 
@@ -118,6 +114,7 @@ with sqlalchemy.orm.Session(engine) as sess:
             bigger_user_id=receiver.id,
             pending=friendship_data["pending"],
             sender_is_smaller_id=True,
+            buddies=friendship_data["buddies"]
         )
 
         sess.add(friendship)

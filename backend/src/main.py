@@ -1,15 +1,17 @@
 import argparse
-import dataclasses
 import json
+import html
 import pathlib
-from dataclasses import dataclass
-from datetime import datetime, timedelta
+import time
+import threading
+import dataclasses
+from datetime import timedelta
+from string import Template
 from http import HTTPStatus as status
 
 import cassiopeia as cass
 import dacite
 import flask
-import flask.views as views
 import flask_cors
 import sqlalchemy
 import sqlalchemy.orm
@@ -33,152 +35,13 @@ STATIC_PATH = "static"
 ICONS_PATH = f"{STATIC_PATH}/icons"
 
 
-class UserListView(views.MethodView):
-    def get(self):
-        """Return the list of all users. Applies filters if supplied.
-        
-        can filter by:
-        - name: all returned users will have string `name` in their name
-        - friend_of: all returned users will be friends with the user whose id is `friend_of`
-        """
-
-        # TODO: Some kind of pagination?
-
-        args_name = flask.request.args.get("name")
-        args_friend_of = flask.request.args.get("friend_of")
-        
-        with sqlalchemy.orm.Session(engine) as session:
-            if args_friend_of is None:
-                users = session.query(models.User)
-            else:
-                # get ids of all the friends
-                user_ids = sqlalchemy.union(
-                    sqlalchemy.select(models.Friendship.smaller_user_id.label("id"))
-                    .where(
-                        sqlalchemy.and_(
-                            models.Friendship.bigger_user_id == args_friend_of,
-                            sqlalchemy.not_(models.Friendship.pending),
-                        )
-                    ),
-
-                    sqlalchemy.select(models.Friendship.bigger_user_id.label("id"))
-                    .where(
-                        sqlalchemy.and_(
-                            models.Friendship.smaller_user_id == args_friend_of,
-                            sqlalchemy.not_(models.Friendship.pending),
-                        )
-                    ),
-                )
-               
-                users = (
-                    session.query(models.User)
-                    .join(user_ids, models.User.id == user_ids.c.id)
-                )
-
-            if args_name is not None:
-                users = users.where(models.User.name.contains(args_name))
-           
-            users = users.all()
-
-            result = [user.to_dict() for user in users]
-            return result
-
-
-class UserDetailView(views.MethodView):
-    wait_time = timedelta(hours=1)      # time to wait between profile updates
-
-    def _get_user_data(self, id: int) -> dict | None:
-        """ Retrieves the user dict representation by id. If no user was found it will return None.
-
-        This method will update at regular intervals of time, defined by `wait_time`, the user's profile
-
-        Possible updates:
-            - profile icon: if it does not exist it will be fetched and stored
-            - last match: it is updated with the match start datetime + user's time played
-
-        Args:
-            id (int): id of the user
-
-        Returns: a dictionary containing user data if the user was found else None
-        """
-        with sqlalchemy.orm.Session(engine) as session:
-            user: models.User = session.query(models.User).filter_by(id=id).one_or_none()
-
-            # user not found
-            if user is None:
-                return None
-
-            profile: models.Profile = user.profile
-
-            # check whether profile information is out of date (or missing),
-            # and if it is, update it
-            now = datetime.now()
-            if (
-                profile.last_match_updated is None
-                or now - profile.last_match_updated >= self.wait_time
-            ):
-                profile.last_match_updated = now
-
-                # get summoner associated with user
-                summoner = cass.Summoner(puuid=profile.riot_puuid, region=profile.riot_region)
-
-                # 1) check summoner's icon
-                icon = summoner.profile_icon
-                if profile.icon is None or profile.icon.id != icon.id:
-                    # get the new icon
-                    new_icon: models.Icon = session.query(models.Icon).filter_by(id=icon.id).one_or_none()
-
-                    # if icon is missing, save and store it
-                    if new_icon is None:
-                        # save and store in db
-                        icon_path = f"{ICONS_PATH}/{icon.id}.{icon.image.format.lower()}"
-                        pathlib.Path(icon_path).parent.mkdir(parents=True, exist_ok=True)
-
-                        icon.image.save(icon_path)
-                        new_icon = models.Icon(id=icon.id, path=icon_path)
-
-                    # assign the new icon
-                    profile.icon = new_icon
-
-                # 2) check summoner's match history
-                match_history = summoner.match_history
-
-                # if match history is empty an exception will be raised and ignore
-                # otherwise update the last match if necessary
-                try:
-                    last_match = match_history[0]
-                    if profile.last_match_id != last_match.id:
-                        print(last_match.participants)
-                        participant = next((p for p in last_match.participants if p.summoner.puuid == profile.riot_puuid), None)
-                        if participant is None:
-                            # this should not happen
-                            assert False
-
-                        last_match_end = (last_match.start + timedelta(seconds=participant.stats.time_played)).datetime
-                        profile.last_match_id = last_match.id
-                        profile.last_match_end = last_match_end
-                except IndexError:
-                    pass
-
-            session.commit()
-
-            return user.to_dict()
-
-    def get(self, id: int):
-        """ Returns the user by id. """
-        user_data = self._get_user_data(id)
-        if user_data is None:
-            return "", status.NOT_FOUND
-        return user_data
-
-
-@dataclass
+@dataclasses.dataclass
 class UserLoginRequest:
     name: str
     password: str
 
 
-@dataclass
+@dataclasses.dataclass
 class UserRegisterRequest:
     name: str
     password: str
@@ -186,34 +49,97 @@ class UserRegisterRequest:
     region: str
     email: str
 
-@dataclass
+@dataclasses.dataclass
 class CreateFriendshipRequest:
     sender_id: int
     receiver_id: int
 
 
-@dataclass
+@dataclasses.dataclass
 class AcceptFriendshipRequest:
     sender_id: int
     receiver_id: int
 
 
-@dataclass 
+@dataclasses.dataclass
 class RemoveFriendshipRequest:
     sender_id: int
     receiver_id: int
 
 
-@dataclass
+@dataclasses.dataclass
 class PendingFriendshipNotification:
     id: int
     name: str
 
 
-@dataclass
+@dataclasses.dataclass
 class Notification:
     kind: str
     content: PendingFriendshipNotification
+
+
+@app.get("/users")
+def get_users():
+    """Return the list of all users. Applies filters if supplied.
+
+    can filter by:
+    - name: all returned users will have string `name` in their name
+    - friend_of: all returned users will be friends with the user whose id is `friend_of`
+    """
+
+    # TODO: Some kind of pagination?
+
+    args_name = flask.request.args.get("name")
+    args_friend_of = flask.request.args.get("friend_of")
+
+    with sqlalchemy.orm.Session(engine) as session:
+        if args_friend_of is None:
+            users = session.query(models.User)
+        else:
+            # get ids of all the friends
+            user_ids = sqlalchemy.union(
+                sqlalchemy.select(models.Friendship.smaller_user_id.label("id"))
+                .where(
+                    sqlalchemy.and_(
+                        models.Friendship.bigger_user_id == args_friend_of,
+                        sqlalchemy.not_(models.Friendship.pending),
+                    )
+                ),
+
+                sqlalchemy.select(models.Friendship.bigger_user_id.label("id"))
+                .where(
+                    sqlalchemy.and_(
+                        models.Friendship.smaller_user_id == args_friend_of,
+                        sqlalchemy.not_(models.Friendship.pending),
+                    )
+                ),
+            )
+
+            users = (
+                session.query(models.User)
+                .join(user_ids, models.User.id == user_ids.c.id)
+            )
+
+        if args_name is not None:
+            users = users.where(models.User.name.contains(args_name))
+
+        users = users.all()
+
+        result = [user.to_dict() for user in users]
+        return result
+
+
+@app.get("/user/by-id/<int:id>")
+def get_user(id: int):
+    """ Returns the user by id. """
+    with sqlalchemy.orm.Session(engine) as session:
+        user = session.query(models.User).filter_by(id=id).one_or_none()
+
+        if user is None:
+            return "", status.NOT_FOUND
+
+        return user.to_dict()
 
 
 @app.get("/user/by-id/<int:user_id>/notifications")
@@ -391,7 +317,10 @@ def user_register():
                 email_already_exists="(sqlite3.IntegrityError) UNIQUE constraint failed: User.email" in args,
             )
             return response, status.BAD_REQUEST
-        
+
+        # update user profile
+        update_user(new_user.id)
+
         return new_user.to_dict(), status.OK
 
 
@@ -417,7 +346,7 @@ def user_login():
 @app.get("/icon/by-id/<int:id>")
 def get_icon(id: int):
     with sqlalchemy.orm.Session(engine) as session:
-        icon: models.Icon = session.query(models.Icon).filter_by(id=id).one_or_none()
+        icon = session.query(models.Icon).filter_by(id=id).one_or_none()
         if icon is None:
             return "", status.NOT_FOUND
 
@@ -427,15 +356,111 @@ def get_icon(id: int):
         return flask.send_file(icon_path, "image/png")
 
 
+def update_user(id: int):
+    """ This method will update the user's profile with the given id.
+
+    Possible updates:
+        - profile icon: if it does not exist it will be fetched and stored
+        - last match: it is updated with the match start datetime + user's time played
+
+    Note:
+        If the user has played a league of legends match, since the last update, it's buddy
+        will be notified.
+
+    Args:
+        id (int): id of a user
+    """
+    with sqlalchemy.orm.Session(engine) as session:
+        user = session.query(models.User).filter_by(id=id).one()
+        profile = user.profile
+
+        # get summoner associated with user
+        summoner = cass.Summoner(puuid=profile.riot_puuid, region=profile.riot_region)
+
+        # 1) check summoner's icon
+        icon = summoner.profile_icon
+        if profile.icon is None or profile.icon.id != icon.id:
+            # get the new icon
+            new_icon = session.query(models.Icon).filter_by(id=icon.id).one_or_none()
+
+            # fetch and store the new icon if it does not already exist
+            if new_icon is None:
+                # save and store in db
+                icon_path = f"{ICONS_PATH}/{icon.id}.{icon.image.format.lower()}"
+                pathlib.Path(icon_path).parent.mkdir(parents=True, exist_ok=True)
+
+                icon.image.save(icon_path)
+                new_icon = models.Icon(id=icon.id, path=icon_path)
+
+            # assign the new icon
+            profile.icon = new_icon
+
+        # 2) check summoner's match history
+        match_history = summoner.match_history
+        if len(match_history) > 0:
+            last_match = match_history[0]
+            if profile.last_match_id != last_match.id:
+                participant = next((p for p in last_match.participants if p.summoner.puuid == profile.riot_puuid), None)
+
+                # this should not happen
+                if participant is None:
+                    assert False
+
+                last_match_end = (last_match.start + timedelta(seconds=participant.stats.time_played)).datetime
+
+                profile.last_match_id = last_match.id
+                profile.last_match_end = last_match_end
+
+                # notify buddy (for relapse)
+                buddy_friendship = session.query(models.Friendship).filter(
+                    ((models.Friendship.bigger_user_id == user.id) | (models.Friendship.smaller_user_id == user.id))
+                    & models.Friendship.buddies
+                ).one_or_none()
+
+                if buddy_friendship is not None:
+                    buddy = buddy_friendship.bigger_user if buddy_friendship.bigger_user_id != user.id else buddy_friendship.smaller_user
+
+                    # read email template
+                    with open(pathlib.Path(__file__).parent / "email.html") as file:
+                        email_template = Template(file.read())
+
+                    # send email
+                    with app.app_context():
+                        msg = Message("Your buddy has relapsed", recipients=[buddy.email])
+                        msg.html = email_template.substitute({
+                            "user_name": html.escape(buddy.name),
+                            "buddy_name": html.escape(user.name),
+                            "date_played": html.escape(last_match.creation.strftime("%d.%m.%Y")),
+                            "time_played": html.escape(last_match.creation.strftime("%I:%M %p"))
+                        })
+                        mail.send(msg)
+
+        session.commit()
+
+
+def update_users(interval: int):
+    """ This method will update the users' profiles at regular intervals of time, defined by `interval`.
+
+    Args:
+        interval (int): interval of time (in seconds) at which the users are updated
+    """
+    while True:
+        time.sleep(interval)
+        print("Updating profiles...")
+
+        with sqlalchemy.orm.Session(engine) as session:
+            users = session.query(models.User).all()
+            for user in users:
+                update_user(user.id)
+
+        print("Updated successfully")
+
+
 def main(args):
     # config file
     with open(args.config_file) as f:
         config = json.load(f)
     cass.set_riot_api_key(config["riot_api_key"])
-
-    # routes
-    app.add_url_rule("/users", view_func=UserListView.as_view("user_list"))
-    app.add_url_rule("/user/by-id/<int:id>", view_func=UserDetailView.as_view("user_detail"))
 
     # create db
     models.ModelBase.metadata.create_all(engine)
@@ -449,8 +474,12 @@ def main(args):
     app.config["MAIL_DEFAULT_SENDER"] = config["email_username"]
     mail.init_app(app)
 
+    # init daemon that updates the users periodically
+    daemon = threading.Thread(target=update_users, args=(3600,), daemon=True, name="Updater daemon")
+    daemon.start()
+
     # run flask
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)
 
 
 if __name__ == "__main__":
