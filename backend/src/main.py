@@ -137,7 +137,7 @@ def get_user(id: int):
         user = session.query(models.User).filter_by(id=id).one_or_none()
 
         if user is None:
-            return "", status.NOT_FOUND
+            return "User not found", status.NOT_FOUND
 
         return user.to_dict()
 
@@ -148,7 +148,7 @@ def user_get_notifications(user_id: int):
     with sqlalchemy.orm.Session(engine) as session:
         user = session.query(models.User).filter_by(id=user_id).one_or_none()
         if user is None:
-            return "", status.NOT_FOUND
+            return "User not found", status.NOT_FOUND
         
         friendships = (
             session.query(models.Friendship)
@@ -213,7 +213,7 @@ def friendship_create():
     try:
         data = dacite.from_dict(data_class=CreateFriendshipRequest, data=data)
     except dacite.DaciteError:
-        return "", status.BAD_REQUEST
+        return "Wrong fields or data types", status.BAD_REQUEST
 
     with sqlalchemy.orm.Session(engine) as session:
         sender_smaller = True
@@ -241,7 +241,7 @@ def friendship_accept():
     try:
         data = dacite.from_dict(data_class=AcceptFriendshipRequest, data=data)
     except dacite.DaciteError:
-        return "", status.BAD_REQUEST
+        return "Wrong fields or data types", status.BAD_REQUEST
 
     with sqlalchemy.orm.Session(engine) as session:
 
@@ -263,7 +263,7 @@ def friendship_remove():
     try:
         data = dacite.from_dict(data_class=RemoveFriendshipRequest, data=data)
     except dacite.DaciteError:
-        return "", status.BAD_REQUEST
+        return "Wrong fields or data types", status.BAD_REQUEST
 
     with sqlalchemy.orm.Session(engine) as session:
 
@@ -284,7 +284,7 @@ def user_register():
     try:
         data = dacite.from_dict(data_class=UserRegisterRequest, data=data)
     except dacite.DaciteError:
-        return "", status.BAD_REQUEST
+        return "Wrong fields or data types", status.BAD_REQUEST
     
     try:
         summoner = cass.Summoner(name=data.summoner_name, region=data.region)
@@ -330,15 +330,15 @@ def user_login():
     try:
         data = dacite.from_dict(data_class=UserLoginRequest, data=data)
     except dacite.DaciteError:
-        return "", status.BAD_REQUEST
+        return "Wrong fields or data types", status.BAD_REQUEST
 
     with sqlalchemy.orm.Session(engine) as session:
         user: models.User = session.query(models.User).filter_by(name=data.name).one_or_none()
         if user is None:
-            return "", status.UNAUTHORIZED
+            return "Incorrect username", status.UNAUTHORIZED
 
     if user.password != data.password:
-        return "", status.UNAUTHORIZED
+        return "Incorrect password", status.UNAUTHORIZED
 
     return dict(id=user.id)
 
@@ -348,7 +348,7 @@ def get_icon(id: int):
     with sqlalchemy.orm.Session(engine) as session:
         icon = session.query(models.Icon).filter_by(id=id).one_or_none()
         if icon is None:
-            return "", status.NOT_FOUND
+            return "Icon not found", status.NOT_FOUND
 
         # get absolute path
         icon_path = pathlib.Path(icon.path).resolve()
