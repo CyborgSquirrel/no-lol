@@ -68,6 +68,24 @@ class RemoveFriendshipRequest:
 
 
 @dataclasses.dataclass
+class CreateBuddyRequest:
+    sender_id: int
+    receiver_id: int
+
+
+@dataclasses.dataclass
+class AcceptBuddyRequest:
+    sender_id: int
+    receiver_id: int
+
+
+@dataclasses.dataclass
+class RemoveBuddyRequest:
+    sender_id: int
+    receiver_id: int
+
+
+@dataclasses.dataclass
 class PendingFriendshipNotification:
     id: int
     name: str
@@ -275,6 +293,93 @@ def friendship_remove():
         session.commit()
         
         return "", status.OK
+
+
+@app.post("/buddy/create")
+def buddy_create():
+    data = flask.request.json
+
+    try:
+        data = dacite.from_dict(data_class=CreateBuddyRequest, data=data)
+    except dacite.DaciteError:
+        return "Wrong fields or data types", status.BAD_REQUEST
+
+    with sqlalchemy.orm.Session(engine) as session:
+        sender_smaller = True
+
+        if data.sender_id > data.receiver_id:
+            sender_smaller = False
+
+        smaller_id, bigger_id = data.sender_id, data.receiver_id
+        if smaller_id > bigger_id:
+            smaller_id, bigger_id = bigger_id, smaller_id
+        friendship = session.get(models.Friendship, (smaller_id, bigger_id))
+
+        if friendship is None or friendship.pending is True:
+            return "Friends before buddies", status.NOT_FOUND
+
+        friendship.smaller_user_id = data.sender_id if sender_smaller else data.receiver_id
+        friendship.bigger_user_id = data.receiver_id if sender_smaller else data.sender_id
+        friendship.sender_is_smaller_id = sender_smaller
+        friendship.pending_buddy = True
+
+        session.commit()
+
+        return friendship.to_dict(), status.OK
+
+
+@app.put("/buddy/accept")
+def buddy_accept():
+    data = flask.request.json
+
+    try:
+        data = dacite.from_dict(data_class=AcceptBuddyRequest, data=data)
+    except dacite.DaciteError:
+        return "Wrong fields or data types", status.BAD_REQUEST
+
+    with sqlalchemy.orm.Session(engine) as session:
+
+        smaller_id, bigger_id = data.sender_id, data.receiver_id
+        if smaller_id > bigger_id:
+            smaller_id, bigger_id = bigger_id, smaller_id
+        friendship = session.get(models.Friendship, (smaller_id, bigger_id))
+
+        if friendship is None or friendship.pending_buddy is False:
+            return "Buddy request does not exist", status.NOT_FOUND
+
+        friendship.pending_buddy = False
+        friendship.buddies = True
+
+        session.commit()
+
+        return friendship.to_dict(), status.OK
+
+
+@app.delete("/buddy/remove")
+def buddy_remove():
+    data = flask.request.json
+
+    try:
+        data = dacite.from_dict(data_class=AcceptBuddyRequest, data=data)
+    except dacite.DaciteError:
+        return "Wrong fields or data types", status.BAD_REQUEST
+
+    with sqlalchemy.orm.Session(engine) as session:
+
+        smaller_id, bigger_id = data.sender_id, data.receiver_id
+        if smaller_id > bigger_id:
+            smaller_id, bigger_id = bigger_id, smaller_id
+        friendship = session.get(models.Friendship, (smaller_id, bigger_id))
+
+        if friendship is None or (friendship.pending_buddy is False and friendship.buddies is False):
+            return "Buddy request does not exist or they are not buddies", status.NOT_FOUND
+
+        friendship.pending_buddy = False
+        friendship.buddies = False
+
+        session.commit()
+
+        return friendship.to_dict(), status.OK
 
 
 @app.post("/user/register")
