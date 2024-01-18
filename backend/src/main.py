@@ -360,7 +360,7 @@ def buddy_remove():
     data = flask.request.json
 
     try:
-        data = dacite.from_dict(data_class=AcceptBuddyRequest, data=data)
+        data = dacite.from_dict(data_class=RemoveBuddyRequest, data=data)
     except dacite.DaciteError:
         return "Wrong fields or data types", status.BAD_REQUEST
 
