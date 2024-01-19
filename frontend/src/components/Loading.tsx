@@ -14,7 +14,7 @@ export function Loading() {
                 alignItems: "center"
             }}
         >
-            <LinearProgress sx = {{
+            <LinearProgress sx={{
                 width: "50em"
             }}/>
         </Box>
