@@ -414,7 +414,7 @@ function ProfilePage() {
                         sx={{
                             position: "absolute",
                             top: "65px",
-                            right: "54px",
+                            right: "70px",
                             backgroundColor: Colors.WHITE_BLUE,
                             "&:hover": {
                                 backgroundColor: Colors.FOLLY,
@@ -437,7 +437,7 @@ function ProfilePage() {
                         sx={{
                             position: "absolute",
                             top: "65px",
-                            right: "54px",
+                            right: "70px",
                             backgroundColor: Colors.WHITE_BLUE,
                             "&:hover": {
                                 backgroundColor: Colors.FOLLY,
@@ -447,6 +447,40 @@ function ProfilePage() {
                     >
                         <HomeIcon style={{ fontSize: 32, color: Colors.RICH_BLACK }} />
                     </IconButton>)}
+
+                <IconButton
+                    onClick={() => setIsUserModalOpen(true)}
+                    sx={{
+                        position: "absolute",
+                        top: "20px",
+                        right: "40px",
+                        backgroundColor: Colors.WHITE_BLUE,
+                        "&:hover": {
+                            backgroundColor: Colors.FOLLY,
+                        },
+                    }}
+                    title="Search by username"
+                >
+                    <Search style={{ fontSize: 32, color: Colors.RICH_BLACK }} />
+                </IconButton>
+                <UserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} byName={true} userId={loggedInUserId}/>
+
+                <IconButton
+                    onClick={() => setIsFriendsModalOpen(true)}
+                    sx={{
+                        position: "absolute",
+                        top: "20px",
+                        right: "100px",
+                        backgroundColor: Colors.WHITE_BLUE,
+                        "&:hover": {
+                            backgroundColor: Colors.FOLLY,
+                        },
+                    }}
+                    title="Search"
+                >
+                    <Group style={{ fontSize: 32, color: Colors.RICH_BLACK }} />
+                </IconButton>
+                <UserModal isOpen={isFriendsModalOpen} onClose={() => setIsFriendsModalOpen(false)} byName={false} userId={loggedInUserId}/>
             </Box>
             <Container sx={{
                 marginTop: "5em",
@@ -510,41 +544,6 @@ function ProfilePage() {
                     <img style={{width: "25%"}} src={wave_blue}/>
                 </Box>
             </Box>
-
-            <IconButton
-                onClick={() => setIsUserModalOpen(true)}
-                sx={{
-                    position: "absolute",
-                    top: "20px",
-                    right: "40px",
-                    backgroundColor: Colors.WHITE_BLUE,
-                    "&:hover": {
-                        backgroundColor: Colors.FOLLY,
-                    },
-                }}
-                title="Search by username"
-            >
-                <Search style={{ fontSize: 32, color: Colors.RICH_BLACK }} />
-            </IconButton>
-            <UserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} byName={true} userId={loggedInUserId}/>
-
-            <IconButton
-                onClick={() => setIsFriendsModalOpen(true)}
-                sx={{
-                    position: "absolute",
-                    top: "20px",
-                    right: "100px",
-                    backgroundColor: Colors.WHITE_BLUE,
-                    "&:hover": {
-                        backgroundColor: Colors.FOLLY,
-                    },
-                }}
-                title="Search"
-            >
-                <Group style={{ fontSize: 32, color: Colors.RICH_BLACK }} />
-            </IconButton>
-            <UserModal isOpen={isFriendsModalOpen} onClose={() => setIsFriendsModalOpen(false)} byName={false} userId={loggedInUserId}/>
-
         </Box>
     )
 }
