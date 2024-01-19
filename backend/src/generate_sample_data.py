@@ -67,7 +67,8 @@ friendships = [
         "sender_name": "stefan",
         "receiver_name": "99 9 impulse fm",
         "pending": False,
-        "buddies": True,
+        "buddies": False,
+        "pending_buddy": True,
     },
 ]
 
@@ -114,7 +115,8 @@ with sqlalchemy.orm.Session(engine) as sess:
             bigger_user_id=receiver.id,
             pending=friendship_data["pending"],
             sender_is_smaller_id=True,
-            buddies=friendship_data["buddies"]
+            buddies=friendship_data["buddies"],
+            pending_buddy=friendship_data["pending_buddy"],
         )
 
         sess.add(friendship)

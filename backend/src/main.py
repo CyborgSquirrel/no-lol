@@ -92,9 +92,15 @@ class PendingFriendshipNotification:
 
 
 @dataclasses.dataclass
+class PendingBuddyshipNotification:
+    id: int
+    name: str
+
+
+@dataclasses.dataclass
 class Notification:
     kind: str
-    content: PendingFriendshipNotification
+    content: PendingFriendshipNotification|PendingBuddyshipNotification
 
 
 @app.get("/users")
@@ -189,6 +195,29 @@ def user_get_notifications(user_id: int):
                     ),
                 )
             )
+
+        buddyships = (
+            session.query(models.Friendship)
+            .where(
+                sqlalchemy.and_(
+                    models.Friendship.receiver_id == user_id,
+                    models.Friendship.pending_buddy,
+                )
+            )
+            .all()
+        )
+
+        for buddyship in buddyships:
+            notifications.append(
+                Notification(
+                    kind="pending_buddyship",
+                    content=PendingBuddyshipNotification(
+                        id=buddyship.sender_id,
+                        name=buddyship.sender.name,
+                    ),
+                )
+            )
+            
     notifications = [
         dataclasses.asdict(notification)
         for notification in notifications
