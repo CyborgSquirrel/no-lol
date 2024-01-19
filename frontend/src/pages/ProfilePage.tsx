@@ -10,7 +10,7 @@ import wave_mov from "../assets/wave_mov.svg"
 import wave_blue from "../assets/wave_blue.svg"
 import {DateTime} from "luxon";
 import {BACKEND_API_URL} from "../constants";
-import {Search, Group, Diversity3, GroupAdd} from "@mui/icons-material";
+import {Search, Group, Diversity3, GroupAdd, GroupRemove} from "@mui/icons-material";
 import UserModal from "../pages/UserModal";
 import {useEffect, useState} from "react";
 import {NotifList} from "../components/NotifList";
@@ -24,11 +24,6 @@ enum FriendshipState {
     Pending,
     Exists,
 }
-enum BuddyState {
-    Pending,
-    Exists,
-}
-
 function ProfilePage() {
     const queryClient = useQueryClient();
 
@@ -67,12 +62,9 @@ function ProfilePage() {
     const userQuery = useQuery<User>({
         queryKey: ['userData', pageUserId, loggedInUserId],
         queryFn: async () => {
-            // let data: User = await axios.get(`user/by-id/${pageUserId}`)
-            //     .then(response => response.data);
             const response = await axios.get(`user/by-id/${pageUserId}`);
             if(response.status === 200){
                 const data = response.data;
-                // take create the request for the profile photo
                 data.icon = `${BACKEND_API_URL}/icon/by-id/${data.profile.icon_id}`;
                 return data;
             } else {
@@ -84,13 +76,9 @@ function ProfilePage() {
     const buddyQuery = useQuery<User>({
         queryKey: ['buddyData', pageUserId],
         queryFn: async () => {
-            // let data: User = await axios.get(`/user/by-id/${pageUserId}/buddy`)
-            //     .then(response => response.data);
-            // take create the request for the profile photo
             const response = await axios.get(`/user/by-id/${pageUserId}/buddy`);
             if(response.status === 200){
                 const data = response.data;
-                // take create the request for the profile photo
                 data.icon = `${BACKEND_API_URL}/icon/by-id/${data.profile.icon_id}`;
                 return data;
             } else {
@@ -102,12 +90,9 @@ function ProfilePage() {
     const myBuddyQuery = useQuery<User>({
         queryKey: ['buddyData', loggedInUserId],
         queryFn: async () => {
-            // let data: User = await axios.get(`/user/by-id/${loggedInUserId}/buddy`)
-            //     .then(response => {response.data});
             const response = await axios.get(`/user/by-id/${loggedInUserId}/buddy`);
             if(response.status === 200){
                 const data = response.data;
-                // take create the request for the profile photo
                 data.icon = `${BACKEND_API_URL}/icon/by-id/${data.profile.icon_id}`;
                 return data;
             } else {
@@ -293,7 +278,7 @@ function ProfilePage() {
                                     queryClient.invalidateQueries({ queryKey: ["userSearch"] });
                                 }}
                             >
-                                <PersonRemoveIcon/>
+                                <GroupRemove/>
                             </Button>
                         </Tooltip>
                     }
@@ -305,7 +290,8 @@ function ProfilePage() {
                                 sx={{
                                     alignSelf: 'flex-start',
                                     position: 'absolute',
-                                    top: "120px",
+                                    top: "50px",
+                                    marginLeft: "75px",
                                     padding: '10px',
                                     width: '60px',
                                     backgroundColor: Colors.ISLE_BLUE,
@@ -337,7 +323,8 @@ function ProfilePage() {
                                 sx={{
                                     alignSelf: 'flex-start',
                                     position: 'absolute',
-                                    top: "120px",
+                                    top: "50px",
+                                    marginLeft: "75px",
                                     padding: '10px',
                                     width: '60px',
                                     backgroundColor: Colors.ISLE_BLUE,
@@ -411,37 +398,6 @@ function ProfilePage() {
                 {/*notif button; show only on self profile page*/}
                 {loggedInUserId === pageUserId
                 ?
-                // (<><Button
-                //     sx={{
-                //         position: 'absolute',
-                //         marginTop: "40px",
-                //         top: "0",
-                //         right: '50px',
-                //         padding: '10px',
-                //         width: '60px',
-                //         backgroundColor: Colors.RICH_BLACK,
-                //         color: Colors.WHITE_BLUE,
-                //         borderRadius: '5px',
-                //         border: `3px solid ${Colors.ULTRA_VIOLET}`,
-                //         cursor: 'pointer',
-                //         '&:hover': {
-                //             backgroundColor: Colors.ISLE_BLUE,
-                //         },
-                //     }}
-                //     type="button" onClick={openRequestList}
-                // >
-                //     <Badge
-                //         badgeContent={notificationsList === undefined ? 0 : notificationsList.length}
-                //         sx={{
-                //             "& .MuiBadge-badge": {
-                //                 color: Colors.WHITE_BLUE,
-                //                 backgroundColor: Colors.FOLLY
-                //             }
-                //         }}
-                //     >
-                //         <PeopleIcon/>
-                //     </Badge>
-                // </Button>
                     (<><IconButton
                         onClick={openRequestList}
                         sx={{
@@ -465,28 +421,6 @@ function ProfilePage() {
 
                 // home button to return to self profile page
                 :
-                // (<Button
-                //     sx={{
-                //         position: 'absolute',
-                //         marginTop: "40px",
-                //         top: "0",
-                //         right: '50px',
-                //         padding: '10px',
-                //         width: '60px',
-                //         backgroundColor: Colors.RICH_BLACK,
-                //         color: Colors.WHITE_BLUE,
-                //         borderRadius: '5px',
-                //         border: `3px solid ${Colors.ULTRA_VIOLET}`,
-                //         cursor: 'pointer',
-                //         '&:hover': {
-                //             backgroundColor: Colors.ISLE_BLUE,
-                //         },
-                //     }}
-                //     type="button"
-                //     onClick={() => navigate(`/profile/${loggedInUserId}`)}
-                // >
-                //     <HomeIcon/>
-                // </Button>)}
                     (<IconButton
                         onClick={() => navigate(`/profile/${loggedInUserId}`)}
                         sx={{
@@ -565,7 +499,7 @@ function ProfilePage() {
                     <img style={{width: "25%"}} src={wave_blue}/>
                 </Box>
             </Box>
-            
+
             <IconButton
                 onClick={() => setIsUserModalOpen(true)}
                 sx={{

@@ -80,6 +80,7 @@ function FriendRequest({user, other, name, onAccept, onDecline}) {
     );
 
 }
+
 // @ts-ignore
 function BuddyRequest({user, other, name, onAccept, onDecline}) {
     const navigate = useNavigate();
@@ -162,30 +163,28 @@ export function NotifList({userID}: { userID: string }) {
 
     const handleAcceptClick = async (index: number) => {
         await axios.put(`/friendship/accept`, {sender_id: index, receiver_id: parseInt(userID, 10)});
-        queryClient.invalidateQueries({ queryKey: ["notificationList", userID] });
-        queryClient.invalidateQueries({ queryKey: ["userSearch"] });
+        queryClient.invalidateQueries({queryKey: ["notificationList", userID]});
+        queryClient.invalidateQueries({queryKey: ["userSearch"]});
     };
     const handleRejectClick = async (index: number) => {
         // TODO: make put work
         await axios.delete(`/friendship/remove`, {data: {sender_id: index, receiver_id: parseInt(userID)}});
-        queryClient.invalidateQueries({ queryKey: ["notificationList", userID] });
-        queryClient.invalidateQueries({ queryKey: ["userSearch"] });
+        queryClient.invalidateQueries({queryKey: ["notificationList", userID]});
+        queryClient.invalidateQueries({queryKey: ["userSearch"]});
     };
 
     const handleAcceptBuddyReqClick = async (index: number) => {
         await axios.put(`/buddy/accept`, {sender_id: index, receiver_id: parseInt(userID, 10)});
-        queryClient.invalidateQueries({ queryKey: ["notificationList", userID] });
-        queryClient.invalidateQueries({ queryKey: ["userSearch"] });
+        queryClient.invalidateQueries({queryKey: ["notificationList", userID]});
+        queryClient.invalidateQueries({queryKey: ["userSearch"]});
     };
     const handleRejectBuddyReqClick = async (index: number) => {
         // TODO: make put work
         await axios.delete(`/buddy/remove`, {data: {sender_id: index, receiver_id: parseInt(userID)}});
-        queryClient.invalidateQueries({ queryKey: ["notificationList", userID] });
-        queryClient.invalidateQueries({ queryKey: ["userSearch"] });
+        queryClient.invalidateQueries({queryKey: ["notificationList", userID]});
+        queryClient.invalidateQueries({queryKey: ["userSearch"]});
     };
 
-    // @ts-ignore
-    // @ts-ignore
     return (
         <List sx={{
             backgroundColor: Colors.RICH_BLACK,
@@ -210,30 +209,30 @@ export function NotifList({userID}: { userID: string }) {
                     >
                         {
                             item.kind === "pending_friendship"
-                            ?
-                            (
-                                <FriendRequest
-                                    user={userID}
-                                    other={item.content.id}
-                                    name={item.content.name}
-                                    onAccept={() => handleAcceptClick(item.content.id)}
-                                    onDecline={() => handleRejectClick(item.content.id)}
-                                />
-                            )
-                            :
-                            item.kind === "pending_buddyship"
-                            ?
-                            (
-                                <BuddyRequest
-                                    user={userID}
-                                    other={item.content.id}
-                                    name={item.content.name}
-                                    onAccept={() => handleAcceptBuddyReqClick(item.content.id)}
-                                    onDecline={() => handleRejectBuddyReqClick(item.content.id)}
-                                />
-                            )
-                            :
-                            null
+                                ?
+                                (
+                                    <FriendRequest
+                                        user={userID}
+                                        other={item.content.id}
+                                        name={item.content.name}
+                                        onAccept={() => handleAcceptClick(item.content.id)}
+                                        onDecline={() => handleRejectClick(item.content.id)}
+                                    />
+                                )
+                                :
+                                item.kind === "pending_buddyship"
+                                    ?
+                                    (
+                                        <BuddyRequest
+                                            user={userID}
+                                            other={item.content.id}
+                                            name={item.content.name}
+                                            onAccept={() => handleAcceptBuddyReqClick(item.content.id)}
+                                            onDecline={() => handleRejectBuddyReqClick(item.content.id)}
+                                        />
+                                    )
+                                    :
+                                    null
                         }
                     </ListItem>
                 ))
