@@ -5,7 +5,7 @@ import pathlib
 import time
 import threading
 import dataclasses
-from datetime import timedelta
+from datetime import timedelta, datetime
 from string import Template
 from http import HTTPStatus as status
 
@@ -256,35 +256,6 @@ def user_friendship_get_with_other_user(user_id: int, other_user_id: int):
        
         return friendship
 
-# @app.get("/user/by-id/<int:user_id>/buddy/with-user/by-id/<int:other_user_id>")
-# def user_buddyship_get_with_other_user(user_id: int, other_user_id: int):
-#     with sqlalchemy.orm.Session(engine) as session:
-#         friendship = (
-#             session.query(models.Friendship)
-#             .where(
-#                 sqlalchemy.and_(
-#                     sqlalchemy.or_(
-#                         sqlalchemy.and_(
-#                             models.Friendship.smaller_user_id == user_id,
-#                             models.Friendship.bigger_user_id == other_user_id,
-#                         ),
-#                         sqlalchemy.and_(
-#                             models.Friendship.smaller_user_id == other_user_id,
-#                             models.Friendship.bigger_user_id == user_id,
-#                         ),
-#                     ),
-#                     models.Friendship.buddies,
-#                 )
-#             )
-#             .one_or_none()
-#         )
-#
-#         if friendship is None:
-#             friendship = dict()
-#         else:
-#             friendship = friendship.to_dict()
-#
-#         return friendship
 
 @app.get("/user/by-id/<int:id>/buddy")
 def get_buddy(id: int):
@@ -546,6 +517,41 @@ def get_icon(id: int):
         return flask.send_file(icon_path, "image/png")
 
 
+@app.post("/test-email/user/by-id/<int:id>")
+def test_email(id: int):
+    with sqlalchemy.orm.Session(engine) as session:
+        user = session.query(models.User).filter_by(id=id).one_or_none()
+        if user is None:
+            return "User not found", status.NOT_FOUND
+
+        buddy_friendship = session.query(models.Friendship).filter(
+            ((models.Friendship.bigger_user_id == id) | (models.Friendship.smaller_user_id == id))
+            & models.Friendship.buddies
+        ).one_or_none()
+
+        if buddy_friendship is None:
+            return "", status.NO_CONTENT
+
+        buddy = buddy_friendship.bigger_user if buddy_friendship.bigger_user_id != user.id else buddy_friendship.smaller_user
+
+        # read email template
+        with open(pathlib.Path(__file__).parent / "email.html") as file:
+            email_template = Template(file.read())
+
+        # send email
+        with app.app_context():
+            msg = Message("Your buddy has relapsed", recipients=[user.email])
+            msg.html = email_template.substitute({
+                "user_name": html.escape(user.name),
+                "buddy_name": html.escape(buddy.name),
+                "date_played": html.escape(datetime.now().strftime("%d.%m.%Y")),
+                "time_played": html.escape(datetime.now().strftime("%I:%M %p"))
+            })
+            mail.send(msg)
+
+        return "", status.NO_CONTENT
+
+
 def update_user(id: int):
     """ This method will update the user's profile with the given id.
 
@@ -665,7 +671,7 @@ def main(args):
     mail.init_app(app)
 
     # init daemon that updates the users periodically
-    daemon = threading.Thread(target=update_users, args=(5,), daemon=True, name="Updater daemon")
+    daemon = threading.Thread(target=update_users, args=(15,), daemon=True, name="Updater daemon")
     daemon.start()
 
     # run flask

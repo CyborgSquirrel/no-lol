@@ -76,13 +76,24 @@ function ProfilePage() {
     const buddyQuery = useQuery<User>({
         queryKey: ['buddyData', pageUserId],
         queryFn: async () => {
-            const response = await axios.get(`/user/by-id/${pageUserId}/buddy`);
-            if(response.status === 200){
-                const data = response.data;
-                data.icon = `${BACKEND_API_URL}/icon/by-id/${data.profile.icon_id}`;
-                return data;
-            } else {
-                return null;
+            try {
+                const response = await axios.get(`/user/by-id/${pageUserId}/buddy`);
+                // console.log(response);
+                if (response.status === 200) {
+                    console.log("200");
+                    const data = response.data;
+                    data.icon = `${BACKEND_API_URL}/icon/by-id/${data.profile.icon_id}`;
+                    return data;
+                } else {
+                    console.log("404");
+                    return null;
+                }
+            } catch (error){
+                // @ts-ignore
+                if(error.response.status === 404){
+                    return null;
+                }
+                // console.log(error);
             }
         }
     });
@@ -369,7 +380,7 @@ function ProfilePage() {
                             }}
                         />
                         {
-                            buddy !== undefined ? (
+                            buddy !== undefined && buddy !== null ? (
                                 <Tooltip title={buddy.name} arrow>
                                 <Avatar
                                     alt="ser"
