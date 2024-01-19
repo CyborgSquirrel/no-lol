@@ -23,6 +23,8 @@ import { useBuddyQuery, useNotificationsQuery } from "../common";
 enum FriendshipState {
     Pending,
     Exists,
+    PendingBuddy,
+    Buddies,
 }
 function ProfilePage() {
     const queryClient = useQueryClient();
@@ -87,9 +89,14 @@ function ProfilePage() {
                 const response = await axios.get(`/user/by-id/${loggedInUserId}/friendship/with-user/by-id/${pageUserId}`);
                 if (response.status === 200) {
                     const data = response.data;
+                    console.log(data);
                     if (data.pending !== undefined) {
                         if (data.pending) {
                             return FriendshipState.Pending;
+                        } else if (data.pending_buddy) {
+                            return FriendshipState.PendingBuddy;
+                        } else if (data.buddies) {
+                            return FriendshipState.Buddies;
                         } else {
                             return FriendshipState.Exists;
                         }
@@ -102,6 +109,7 @@ function ProfilePage() {
         }
     });
     const friendshipState = friendshipQuery.data;
+    console.log(friendshipState);
 
     useEffect(() => {
         if (user === undefined) return;
@@ -235,7 +243,7 @@ function ProfilePage() {
                     }
 
                     {/*buddy request button*/}
-                    {loggedInUserId !== undefined && loggedInUserId !== pageUserId && pageBuddy === null && myBuddy === null &&
+                    {loggedInUserId !== undefined && loggedInUserId !== pageUserId && friendshipState == FriendshipState.Exists && pageBuddy === null && myBuddy === null &&
                         <Tooltip title={"Buddy request"}>
                             <Button
                                 sx={{
@@ -294,6 +302,7 @@ function ProfilePage() {
                                     queryClient.invalidateQueries({ queryKey: ["buddyUser"] });
                                     queryClient.invalidateQueries({ queryKey: ["userSearch"] });
                                     queryClient.invalidateQueries({ queryKey: ["buddyData"] });
+                                    queryClient.invalidateQueries({ queryKey: ["userFriendship"] });
                                 }}
                             >
                                 <PersonRemoveIcon/>

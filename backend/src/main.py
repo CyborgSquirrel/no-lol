@@ -242,8 +242,6 @@ def user_friendship_get_with_other_user(user_id: int, other_user_id: int):
                             models.Friendship.bigger_user_id == user_id,
                         ),
                     ),
-                    sqlalchemy.not_(models.Friendship.pending),
-                    sqlalchemy.not_(models.Friendship.buddies),
                 )
             )
             .one_or_none()
@@ -634,14 +632,14 @@ def update_user(id: int):
         session.commit()
 
 
-def update_users(interval: int):
+def update_users(interval: 30):
     """ This method will update the users' profiles at regular intervals of time, defined by `interval`.
 
     Args:
         interval (int): interval of time (in seconds) at which the users are updated
     """
+
     while True:
-        time.sleep(interval)
         print("Updating profiles...")
 
         with sqlalchemy.orm.Session(engine) as session:
@@ -650,6 +648,8 @@ def update_users(interval: int):
                 update_user(user.id)
 
         print("Updated successfully")
+
+        time.sleep(interval)
 
 
 def main(args):
@@ -671,7 +671,7 @@ def main(args):
     mail.init_app(app)
 
     # init daemon that updates the users periodically
-    daemon = threading.Thread(target=update_users, args=(15,), daemon=True, name="Updater daemon")
+    daemon = threading.Thread(target=update_users, args=(30,), daemon=True, name="Updater daemon")
     daemon.start()
 
     # run flask
