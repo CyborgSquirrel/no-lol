@@ -318,8 +318,6 @@ def buddy_create():
         if friendship is None or friendship.pending is True:
             return "Friends before buddies", status.NOT_FOUND
 
-        friendship.smaller_user_id = data.sender_id if sender_smaller else data.receiver_id
-        friendship.bigger_user_id = data.receiver_id if sender_smaller else data.sender_id
         friendship.sender_is_smaller_id = sender_smaller
         friendship.pending_buddy = True
 
