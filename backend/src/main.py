@@ -224,22 +224,26 @@ def user_get_notifications(user_id: int):
     ]
     return notifications
 
-
+# /user/by-id/${loggedInUserId}/buddy/with-user/by-id/${pageUserId}
 @app.get("/user/by-id/<int:user_id>/friendship/with-user/by-id/<int:other_user_id>")
 def user_friendship_get_with_other_user(user_id: int, other_user_id: int):
     with sqlalchemy.orm.Session(engine) as session:
         friendship = (
             session.query(models.Friendship)
             .where(
-                sqlalchemy.or_(
-                    sqlalchemy.and_(
-                        models.Friendship.smaller_user_id == user_id,
-                        models.Friendship.bigger_user_id == other_user_id,
+                sqlalchemy.and_(
+                    sqlalchemy.or_(
+                        sqlalchemy.and_(
+                            models.Friendship.smaller_user_id == user_id,
+                            models.Friendship.bigger_user_id == other_user_id,
+                        ),
+                        sqlalchemy.and_(
+                            models.Friendship.smaller_user_id == other_user_id,
+                            models.Friendship.bigger_user_id == user_id,
+                        ),
                     ),
-                    sqlalchemy.and_(
-                        models.Friendship.smaller_user_id == other_user_id,
-                        models.Friendship.bigger_user_id == user_id,
-                    ),
+                    sqlalchemy.not_(models.Friendship.pending),
+                    sqlalchemy.not_(models.Friendship.buddies),
                 )
             )
             .one_or_none()
@@ -252,6 +256,60 @@ def user_friendship_get_with_other_user(user_id: int, other_user_id: int):
        
         return friendship
 
+# @app.get("/user/by-id/<int:user_id>/buddy/with-user/by-id/<int:other_user_id>")
+# def user_buddyship_get_with_other_user(user_id: int, other_user_id: int):
+#     with sqlalchemy.orm.Session(engine) as session:
+#         friendship = (
+#             session.query(models.Friendship)
+#             .where(
+#                 sqlalchemy.and_(
+#                     sqlalchemy.or_(
+#                         sqlalchemy.and_(
+#                             models.Friendship.smaller_user_id == user_id,
+#                             models.Friendship.bigger_user_id == other_user_id,
+#                         ),
+#                         sqlalchemy.and_(
+#                             models.Friendship.smaller_user_id == other_user_id,
+#                             models.Friendship.bigger_user_id == user_id,
+#                         ),
+#                     ),
+#                     models.Friendship.buddies,
+#                 )
+#             )
+#             .one_or_none()
+#         )
+#
+#         if friendship is None:
+#             friendship = dict()
+#         else:
+#             friendship = friendship.to_dict()
+#
+#         return friendship
+
+@app.get("/user/by-id/<int:id>/buddy")
+def get_buddy(id: int):
+    with sqlalchemy.orm.Session(engine) as session:
+        buddyship = session.query(models.Friendship).filter(
+            sqlalchemy.and_(
+                sqlalchemy.or_(
+                    models.Friendship.smaller_user_id == id,
+                    models.Friendship.bigger_user_id == id,
+                ),
+                models.Friendship.buddies,
+            )
+        ).one_or_none()
+
+        if buddyship is None:
+            return "Buddy not found", status.NOT_FOUND
+
+        if id == buddyship.sender_id:
+            user = buddyship.receiver
+        elif id == buddyship.receiver_id:
+            user = buddyship.sender
+        else:
+            assert False  # oh no
+
+        return user.to_dict()
 
 @app.post("/friendship/create")
 def friendship_create():
@@ -607,7 +665,7 @@ def main(args):
     mail.init_app(app)
 
     # init daemon that updates the users periodically
-    daemon = threading.Thread(target=update_users, args=(3600,), daemon=True, name="Updater daemon")
+    daemon = threading.Thread(target=update_users, args=(5,), daemon=True, name="Updater daemon")
     daemon.start()
 
     # run flask

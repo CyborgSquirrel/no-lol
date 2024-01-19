@@ -1,5 +1,5 @@
 import {useNavigate, useParams} from "react-router-dom";
-import {Avatar, Box, Button, Container, List, ListItem, Popper, Typography, IconButton} from "@mui/material";
+import {Avatar, Box, Button, Container, Popper, Typography, IconButton} from "@mui/material";
 import {User} from "../models/User";
 import {Loading} from "../components/Loading"
 import {useQuery, useQueryClient} from "@tanstack/react-query";
@@ -10,20 +10,21 @@ import wave_mov from "../assets/wave_mov.svg"
 import wave_blue from "../assets/wave_blue.svg"
 import {DateTime} from "luxon";
 import {BACKEND_API_URL} from "../constants";
-import {Search, Group} from "@mui/icons-material";
+import {Search, Group, Diversity3, GroupAdd} from "@mui/icons-material";
 import UserModal from "../pages/UserModal";
 import {useEffect, useState} from "react";
 import {NotifList} from "../components/NotifList";
-import PeopleIcon from '@mui/icons-material/People';
 import HomeIcon from '@mui/icons-material/Home';
-import AddIcon from '@mui/icons-material/Add';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
-import Badge from '@mui/material/Badge';
 import Tooltip from '@mui/material/Tooltip';
 import { useNotificationsQuery } from "../common";
 
 enum FriendshipState {
+    Pending,
+    Exists,
+}
+enum BuddyState {
     Pending,
     Exists,
 }
@@ -66,16 +67,59 @@ function ProfilePage() {
     const userQuery = useQuery<User>({
         queryKey: ['userData', pageUserId, loggedInUserId],
         queryFn: async () => {
-            let data: User = await axios.get(`user/by-id/${pageUserId}`)
-                .then(response => response.data);
-
-            // take create the request for the profile photo
-            data.icon = `${BACKEND_API_URL}/icon/by-id/${data.profile.icon_id}`;
-
-            return data;
+            // let data: User = await axios.get(`user/by-id/${pageUserId}`)
+            //     .then(response => response.data);
+            const response = await axios.get(`user/by-id/${pageUserId}`);
+            if(response.status === 200){
+                const data = response.data;
+                // take create the request for the profile photo
+                data.icon = `${BACKEND_API_URL}/icon/by-id/${data.profile.icon_id}`;
+                return data;
+            } else {
+                return null;
+            }
         }
     });
+
+    const buddyQuery = useQuery<User>({
+        queryKey: ['buddyData', pageUserId],
+        queryFn: async () => {
+            // let data: User = await axios.get(`/user/by-id/${pageUserId}/buddy`)
+            //     .then(response => response.data);
+            // take create the request for the profile photo
+            const response = await axios.get(`/user/by-id/${pageUserId}/buddy`);
+            if(response.status === 200){
+                const data = response.data;
+                // take create the request for the profile photo
+                data.icon = `${BACKEND_API_URL}/icon/by-id/${data.profile.icon_id}`;
+                return data;
+            } else {
+                return null;
+            }
+        }
+    });
+
+    const myBuddyQuery = useQuery<User>({
+        queryKey: ['buddyData', loggedInUserId],
+        queryFn: async () => {
+            // let data: User = await axios.get(`/user/by-id/${loggedInUserId}/buddy`)
+            //     .then(response => {response.data});
+            const response = await axios.get(`/user/by-id/${loggedInUserId}/buddy`);
+            if(response.status === 200){
+                const data = response.data;
+                // take create the request for the profile photo
+                data.icon = `${BACKEND_API_URL}/icon/by-id/${data.profile.icon_id}`;
+                return data;
+            } else {
+                return null;
+            }
+        }
+    });
+
     const user = userQuery.data;
+    const buddy = buddyQuery.data;
+    const myBuddy = myBuddyQuery.data;
+
 
     const friendshipQuery = useQuery<FriendshipState|null>({
         queryKey: ['userFriendship', pageUserId, loggedInUserId],
@@ -100,13 +144,44 @@ function ProfilePage() {
     });
     const friendshipState = friendshipQuery.data;
 
+    // const buddyQuery = useQuery<BuddyState|null>({
+    //     queryKey: ['buddyUser', pageUserId, loggedInUserId],
+    //     queryFn: async () => {
+    //         if (loggedInUserId !== undefined) {
+    //             const response = await axios.get(`/user/by-id/${loggedInUserId}/buddy/with-user/by-id/${pageUserId}`);
+    //             if (response.status === 200) {
+    //                 const data = response.data;
+    //                 if (data.pending !== undefined) {
+    //                     if (data.pending) {
+    //                         return BuddyState.Pending;
+    //                     } else {
+    //                         return BuddyState.Exists;
+    //                     }
+    //                 } else {
+    //                     return null;
+    //                 }
+    //             }
+    //         }
+    //         return null;
+    //     }
+    // });
+    const buddyState = buddyQuery.data;
+
     useEffect(() => {
         if (user === undefined) return;
 
         // TODO: Handle case where last_match_end is null
-        time(user.profile.last_match_end);
+        if(user.profile.last_match_end != null) {
+            time(user.profile.last_match_end);
+        } else {
+            let currentDate = DateTime.now().setZone("system");
+            //console.log(currentDate.toSeconds());
+            time(currentDate.toSeconds());
+        }
         const intervalId = setInterval(() => {
-            time(user.profile.last_match_end)
+            if (user.profile.last_match_end != null) {
+                time(user.profile.last_match_end);
+            }
         }, 10);
 
         return () => {
@@ -126,6 +201,7 @@ function ProfilePage() {
         throw userQuery.error;
     }
 
+    // @ts-ignore
     return (
         <Box sx={{
             height: "100vh",
@@ -158,67 +234,133 @@ function ProfilePage() {
                         boxShadow: "rgba(225,58,106, 0.4) 0px 5px, rgba(225,58,106, 0.3) 0px 10px, rgba(240, 46, 170, 0.2) 0px 15px, rgba(240, 46, 170, 0.1) 0px 20px, rgba(240, 46, 170, 0.05) 0px 25px"
                     }}
                 >
+
                     {/*friend request button*/}
                     {loggedInUserId !== undefined && loggedInUserId !== pageUserId && friendshipState === null &&
-                        <Button
-                            sx={{
-                                alignSelf: 'flex-start',
-                                position: 'relative',
-                                // marginTop: "40px",
-                                top: "10px",
-                                left: '0',
-                                padding: '10px',
-                                width: '60px',
-                                backgroundColor: Colors.ISLE_BLUE,
-                                color: "white",
-                                borderRadius: '5px',
-                                border: `3px solid ${Colors.ULTRA_VIOLET}`,
-                                cursor: 'pointer',
-                                '&:hover': {
-                                    backgroundColor: Colors.ULTRA_VIOLET,
-                                },
-                            }}
-                            type="button"
-                            onClick={async () => {
-                                // @ts-ignore
-                                await axios.post(`/friendship/create`, {sender_id: parseInt(loggedInUserId), receiver_id: parseInt(pageUserId)});
-                                queryClient.invalidateQueries({ queryKey: ["userFriendship"] });
-                            }}
-                        >
-                            <PersonAddIcon/>
-                        </Button>
+                        <Tooltip title={"Friend request"}>
+                            <Button
+                                sx={{
+                                    alignSelf: 'flex-start',
+                                    position: 'absolute',
+                                    top: "50px",
+                                    padding: '10px',
+                                    width: '60px',
+                                    backgroundColor: Colors.ISLE_BLUE,
+                                    color: "white",
+                                    borderRadius: '5px',
+                                    border: `3px solid ${Colors.ULTRA_VIOLET}`,
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                        backgroundColor: Colors.ULTRA_VIOLET,
+                                    },
+                                }}
+                                type="button"
+                                onClick={async () => {
+                                    // @ts-ignore
+                                    await axios.post(`/friendship/create`, {sender_id: parseInt(loggedInUserId), receiver_id: parseInt(pageUserId)});
+                                    queryClient.invalidateQueries({ queryKey: ["userFriendship"] });
+                                }}
+                            >
+                                <Diversity3/>
+                            </Button>
+                        </Tooltip>
                     }
 
                     {/*friend remove button*/}
                     {loggedInUserId !== undefined && loggedInUserId !== pageUserId && friendshipState == FriendshipState.Exists &&
-                        <Button
-                            sx={{
-                                alignSelf: 'flex-start',
-                                position: 'relative',
-                                // marginTop: "40px",
-                                top: "10px",
-                                left: '0',
-                                padding: '10px',
-                                width: '60px',
-                                backgroundColor: Colors.ISLE_BLUE,
-                                color: "white",
-                                borderRadius: '5px',
-                                border: `3px solid ${Colors.ULTRA_VIOLET}`,
-                                cursor: 'pointer',
-                                '&:hover': {
-                                    backgroundColor: Colors.ULTRA_VIOLET,
-                                },
-                            }}
-                            type="button"
-                            onClick={async () => {
-                                // @ts-ignore
-                                await axios.delete(`/friendship/remove`, {data: {sender_id: parseInt(loggedInUserId), receiver_id: parseInt(pageUserId)}});
-                                queryClient.invalidateQueries({ queryKey: ["userFriendship"] });
-                                queryClient.invalidateQueries({ queryKey: ["userSearch"] });
-                            }}
-                        >
-                            <PersonRemoveIcon/>
-                        </Button>}
+                        <Tooltip title={"Friend remove"}>
+                            <Button
+                                sx={{
+                                    alignSelf: 'flex-start',
+                                    position: 'absolute',
+                                    top: "50px",
+                                    padding: '10px',
+                                    width: '60px',
+                                    backgroundColor: Colors.ISLE_BLUE,
+                                    color: "white",
+                                    borderRadius: '5px',
+                                    border: `3px solid ${Colors.ULTRA_VIOLET}`,
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                        backgroundColor: Colors.ULTRA_VIOLET,
+                                    },
+                                }}
+                                type="button"
+                                onClick={async () => {
+                                    // @ts-ignore
+                                    await axios.delete(`/friendship/remove`, {data: {sender_id: parseInt(loggedInUserId), receiver_id: parseInt(pageUserId)}});
+                                    queryClient.invalidateQueries({ queryKey: ["userFriendship"] });
+                                    queryClient.invalidateQueries({ queryKey: ["userSearch"] });
+                                }}
+                            >
+                                <PersonRemoveIcon/>
+                            </Button>
+                        </Tooltip>
+                    }
+
+                    {/*buddy request button*/}
+                    {loggedInUserId !== undefined && loggedInUserId !== pageUserId && buddyState === null && myBuddy === null &&
+                        <Tooltip title={"Buddy request"}>
+                            <Button
+                                sx={{
+                                    alignSelf: 'flex-start',
+                                    position: 'absolute',
+                                    top: "120px",
+                                    padding: '10px',
+                                    width: '60px',
+                                    backgroundColor: Colors.ISLE_BLUE,
+                                    color: "white",
+                                    borderRadius: '5px',
+                                    border: `3px solid ${Colors.ULTRA_VIOLET}`,
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                        backgroundColor: Colors.ULTRA_VIOLET,
+                                    },
+                                }}
+                                type="button"
+                                onClick={async () => {
+                                    console.log("Buton apasat");
+                                    // @ts-ignore
+                                    await axios.post(`/buddy/create`, {sender_id: parseInt(loggedInUserId), receiver_id: parseInt(pageUserId)});
+                                    queryClient.invalidateQueries({ queryKey: ["buddyUser"] });
+                                }}
+                            >
+                                <PersonAddIcon/>
+                            </Button>
+                        </Tooltip>
+                    }
+
+                    {/*buddy remove button*/}
+                    {loggedInUserId !== undefined && loggedInUserId !== pageUserId && buddyState !== null &&
+                        <Tooltip title={"Buddy remove"}>
+                            <Button
+                                sx={{
+                                    alignSelf: 'flex-start',
+                                    position: 'absolute',
+                                    top: "120px",
+                                    padding: '10px',
+                                    width: '60px',
+                                    backgroundColor: Colors.ISLE_BLUE,
+                                    color: "white",
+                                    borderRadius: '5px',
+                                    border: `3px solid ${Colors.ULTRA_VIOLET}`,
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                        backgroundColor: Colors.ULTRA_VIOLET,
+                                    },
+                                }}
+                                type="button"
+                                onClick={async () => {
+                                    // @ts-ignore
+                                    await axios.delete(`/buddy/remove`, {data: {sender_id: parseInt(loggedInUserId), receiver_id: parseInt(pageUserId)}});
+                                    queryClient.invalidateQueries({ queryKey: ["buddyUser"] });
+                                    queryClient.invalidateQueries({ queryKey: ["userSearch"] });
+                                }}
+                            >
+                                <PersonRemoveIcon/>
+                            </Button>
+                        </Tooltip>
+                    }
 
                     {/*personal and inger pazitor photo*/}
                     <Container
@@ -239,21 +381,24 @@ function ProfilePage() {
                                 boxShadow: "0px 0px 22px 8px rgba(83,234,229,0.7)"
                             }}
                         />
-                        <Tooltip title={user.name} arrow>
-                            <Avatar
-                                // TODO onclick
-                                alt="ser"
-                                src={user.icon}
-                                sx={{
-                                    position: "absolute",
-                                    bottom: "0",
-                                    right: "40%",
-                                    width: "3em",
-                                    height: "3em",
-                                    border: `2px solid ${Colors.WHITE_BLUE}`,
-                                }}
-                            />
-                        </Tooltip>
+                        {
+                            buddy !== undefined ? (
+                                <Tooltip title={buddy.name} arrow>
+                                <Avatar
+                                    alt="ser"
+                                    src={buddy.icon}
+                                    sx={{
+                                        position: "absolute",
+                                        bottom: "0",
+                                        right: "40%",
+                                        width: "3em",
+                                        height: "3em",
+                                        border: `2px solid ${Colors.WHITE_BLUE}`,
+                                    }}
+                                />
+                                </Tooltip>
+                            ) : null
+                        }
                     </Container>
 
                     <Typography
@@ -266,37 +411,52 @@ function ProfilePage() {
                 {/*notif button; show only on self profile page*/}
                 {loggedInUserId === pageUserId
                 ?
-                (<><Button
-                    sx={{
-                        position: 'absolute',
-                        marginTop: "40px",
-                        top: "0",
-                        right: '50px',
-                        padding: '10px',
-                        width: '60px',
-                        backgroundColor: Colors.RICH_BLACK,
-                        color: Colors.WHITE_BLUE,
-                        borderRadius: '5px',
-                        border: `3px solid ${Colors.ULTRA_VIOLET}`,
-                        cursor: 'pointer',
-                        '&:hover': {
-                            backgroundColor: Colors.ISLE_BLUE,
-                        },
-                    }}
-                    type="button" onClick={openRequestList}
-                >
-                    <Badge
-                        badgeContent={notificationsList === undefined ? 0 : notificationsList.length}
+                // (<><Button
+                //     sx={{
+                //         position: 'absolute',
+                //         marginTop: "40px",
+                //         top: "0",
+                //         right: '50px',
+                //         padding: '10px',
+                //         width: '60px',
+                //         backgroundColor: Colors.RICH_BLACK,
+                //         color: Colors.WHITE_BLUE,
+                //         borderRadius: '5px',
+                //         border: `3px solid ${Colors.ULTRA_VIOLET}`,
+                //         cursor: 'pointer',
+                //         '&:hover': {
+                //             backgroundColor: Colors.ISLE_BLUE,
+                //         },
+                //     }}
+                //     type="button" onClick={openRequestList}
+                // >
+                //     <Badge
+                //         badgeContent={notificationsList === undefined ? 0 : notificationsList.length}
+                //         sx={{
+                //             "& .MuiBadge-badge": {
+                //                 color: Colors.WHITE_BLUE,
+                //                 backgroundColor: Colors.FOLLY
+                //             }
+                //         }}
+                //     >
+                //         <PeopleIcon/>
+                //     </Badge>
+                // </Button>
+                    (<><IconButton
+                        onClick={openRequestList}
                         sx={{
-                            "& .MuiBadge-badge": {
-                                color: Colors.WHITE_BLUE,
-                                backgroundColor: Colors.FOLLY
-                            }
+                            position: "absolute",
+                            top: "65px",
+                            right: "54px",
+                            backgroundColor: Colors.WHITE_BLUE,
+                            "&:hover": {
+                                backgroundColor: Colors.FOLLY,
+                            },
                         }}
+                        title="Requests"
                     >
-                        <PeopleIcon/>
-                    </Badge>
-                </Button>
+                        <GroupAdd style={{ fontSize: 32, color: Colors.RICH_BLACK }} />
+                    </IconButton>
                 <Popper id={pid} open={open} anchorEl={anchorEl} placement={"bottom-end"}>
                     <NotifList
                     //@ts-ignore
@@ -305,28 +465,43 @@ function ProfilePage() {
 
                 // home button to return to self profile page
                 :
-                (<Button
-                    sx={{
-                        position: 'absolute',
-                        marginTop: "40px",
-                        top: "0",
-                        right: '50px',
-                        padding: '10px',
-                        width: '60px',
-                        backgroundColor: Colors.RICH_BLACK,
-                        color: Colors.WHITE_BLUE,
-                        borderRadius: '5px',
-                        border: `3px solid ${Colors.ULTRA_VIOLET}`,
-                        cursor: 'pointer',
-                        '&:hover': {
-                            backgroundColor: Colors.ISLE_BLUE,
-                        },
-                    }}
-                    type="button"
-                    onClick={() => navigate(`/profile/${loggedInUserId}`)}
-                >
-                    <HomeIcon/>
-                </Button>)}
+                // (<Button
+                //     sx={{
+                //         position: 'absolute',
+                //         marginTop: "40px",
+                //         top: "0",
+                //         right: '50px',
+                //         padding: '10px',
+                //         width: '60px',
+                //         backgroundColor: Colors.RICH_BLACK,
+                //         color: Colors.WHITE_BLUE,
+                //         borderRadius: '5px',
+                //         border: `3px solid ${Colors.ULTRA_VIOLET}`,
+                //         cursor: 'pointer',
+                //         '&:hover': {
+                //             backgroundColor: Colors.ISLE_BLUE,
+                //         },
+                //     }}
+                //     type="button"
+                //     onClick={() => navigate(`/profile/${loggedInUserId}`)}
+                // >
+                //     <HomeIcon/>
+                // </Button>)}
+                    (<IconButton
+                        onClick={() => navigate(`/profile/${loggedInUserId}`)}
+                        sx={{
+                            position: "absolute",
+                            top: "65px",
+                            right: "54px",
+                            backgroundColor: Colors.WHITE_BLUE,
+                            "&:hover": {
+                                backgroundColor: Colors.FOLLY,
+                            },
+                        }}
+                        title="Search"
+                    >
+                        <HomeIcon style={{ fontSize: 32, color: Colors.RICH_BLACK }} />
+                    </IconButton>)}
             </Box>
             <Container sx={{
                 marginTop: "5em",
@@ -343,7 +518,7 @@ function ProfilePage() {
                     fontFamily={"Russo One"}
                     variant="h4"
                     color={Colors.WHITE_BLUE}
-                >Time happier:</Typography>
+                >Time since relapse:</Typography>
                 <Typography
                     fontFamily={"Russo One"}
                     variant="h2"

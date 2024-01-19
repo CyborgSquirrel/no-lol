@@ -9,7 +9,15 @@ export interface PendingFriendshipNotification {
     },
 }
 
-export type Notification = PendingFriendshipNotification;
+export interface PendingBuddyshipNotification {
+    kind: "pending_buddyship",
+    content: {
+        id: number,
+        name: string,
+    }
+}
+
+export type Notification = PendingFriendshipNotification|PendingBuddyshipNotification;
 
 export function useNotificationsQuery(userId: string) {
     const requestListQuery = useQuery<Notification[]>({
