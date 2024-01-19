@@ -18,7 +18,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import Tooltip from '@mui/material/Tooltip';
-import { useNotificationsQuery } from "../common";
+import { useBuddyQuery, useNotificationsQuery } from "../common";
 
 enum FriendshipState {
     Pending,
@@ -73,49 +73,12 @@ function ProfilePage() {
         }
     });
 
-    const buddyQuery = useQuery<User>({
-        queryKey: ['buddyData', pageUserId],
-        queryFn: async () => {
-            try {
-                const response = await axios.get(`/user/by-id/${pageUserId}/buddy`);
-                // console.log(response);
-                if (response.status === 200) {
-                    console.log("200");
-                    const data = response.data;
-                    data.icon = `${BACKEND_API_URL}/icon/by-id/${data.profile.icon_id}`;
-                    return data;
-                } else {
-                    console.log("404");
-                    return null;
-                }
-            } catch (error){
-                // @ts-ignore
-                if(error.response.status === 404){
-                    return null;
-                }
-                // console.log(error);
-            }
-        }
-    });
-
-    const myBuddyQuery = useQuery<User>({
-        queryKey: ['buddyData', loggedInUserId],
-        queryFn: async () => {
-            const response = await axios.get(`/user/by-id/${loggedInUserId}/buddy`);
-            if(response.status === 200){
-                const data = response.data;
-                data.icon = `${BACKEND_API_URL}/icon/by-id/${data.profile.icon_id}`;
-                return data;
-            } else {
-                return null;
-            }
-        }
-    });
+    const pageBuddyQuery = pageUserId === undefined ? undefined : useBuddyQuery(pageUserId);
+    const myBuddyQuery = loggedInUserId === undefined ? undefined : useBuddyQuery(loggedInUserId);
 
     const user = userQuery.data;
-    const buddy = buddyQuery.data;
-    const myBuddy = myBuddyQuery.data;
-
+    const pageBuddy = pageBuddyQuery?.data;
+    const myBuddy = myBuddyQuery?.data;
 
     const friendshipQuery = useQuery<FriendshipState|null>({
         queryKey: ['userFriendship', pageUserId, loggedInUserId],
@@ -139,29 +102,6 @@ function ProfilePage() {
         }
     });
     const friendshipState = friendshipQuery.data;
-
-    // const buddyQuery = useQuery<BuddyState|null>({
-    //     queryKey: ['buddyUser', pageUserId, loggedInUserId],
-    //     queryFn: async () => {
-    //         if (loggedInUserId !== undefined) {
-    //             const response = await axios.get(`/user/by-id/${loggedInUserId}/buddy/with-user/by-id/${pageUserId}`);
-    //             if (response.status === 200) {
-    //                 const data = response.data;
-    //                 if (data.pending !== undefined) {
-    //                     if (data.pending) {
-    //                         return BuddyState.Pending;
-    //                     } else {
-    //                         return BuddyState.Exists;
-    //                     }
-    //                 } else {
-    //                     return null;
-    //                 }
-    //             }
-    //         }
-    //         return null;
-    //     }
-    // });
-    const buddyState = buddyQuery.data;
 
     useEffect(() => {
         if (user === undefined) return;
@@ -295,7 +235,7 @@ function ProfilePage() {
                     }
 
                     {/*buddy request button*/}
-                    {loggedInUserId !== undefined && loggedInUserId !== pageUserId && buddyState === null && myBuddy === null &&
+                    {loggedInUserId !== undefined && loggedInUserId !== pageUserId && pageBuddy === null && myBuddy === null &&
                         <Tooltip title={"Buddy request"}>
                             <Button
                                 sx={{
@@ -328,7 +268,7 @@ function ProfilePage() {
                     }
 
                     {/*buddy remove button*/}
-                    {loggedInUserId !== undefined && loggedInUserId !== pageUserId && buddyState !== null &&
+                    {loggedInUserId !== undefined && pageBuddy !== null && pageBuddy?.id === parseInt(loggedInUserId) &&
                         <Tooltip title={"Buddy remove"}>
                             <Button
                                 sx={{
@@ -353,6 +293,7 @@ function ProfilePage() {
                                     await axios.delete(`/buddy/remove`, {data: {sender_id: parseInt(loggedInUserId), receiver_id: parseInt(pageUserId)}});
                                     queryClient.invalidateQueries({ queryKey: ["buddyUser"] });
                                     queryClient.invalidateQueries({ queryKey: ["userSearch"] });
+                                    queryClient.invalidateQueries({ queryKey: ["buddyData"] });
                                 }}
                             >
                                 <PersonRemoveIcon/>
@@ -380,11 +321,11 @@ function ProfilePage() {
                             }}
                         />
                         {
-                            buddy !== undefined && buddy !== null ? (
-                                <Tooltip title={buddy.name} arrow>
+                            pageBuddy !== undefined && pageBuddy !== null ? (
+                                <Tooltip title={pageBuddy.name} arrow>
                                 <Avatar
                                     alt="ser"
-                                    src={buddy.icon}
+                                    src={pageBuddy.icon}
                                     sx={{
                                         position: "absolute",
                                         bottom: "0",

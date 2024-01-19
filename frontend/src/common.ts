@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import { User } from "./models/User";
+import { BACKEND_API_URL } from "./constants";
 
 export interface PendingFriendshipNotification {
     kind: "pending_friendship",
@@ -33,4 +35,27 @@ export function useNotificationsQuery(userId: string) {
         }
     });
     return requestListQuery;
+}
+
+export function useBuddyQuery(userId: string) {
+    return useQuery<User>({
+        queryKey: ['buddyData', userId],
+        queryFn: async () => {
+            try {
+                const response = await axios.get(`/user/by-id/${userId}/buddy`);
+                if (response.status === 200) {
+                    const data = response.data;
+                    data.icon = `${BACKEND_API_URL}/icon/by-id/${data.profile.icon_id}`;
+                    return data;
+                } else {
+                    return null;
+                }
+            } catch (error){
+                // @ts-ignore
+                if(error.response.status === 404){
+                    return null;
+                }
+            }
+        }
+    });
 }

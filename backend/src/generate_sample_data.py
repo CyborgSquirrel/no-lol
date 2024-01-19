@@ -32,15 +32,15 @@ cass.set_riot_api_key(config["riot_api_key"])
 
 users = [
     # # Thank u Costin for letting me use your account here :))
-    # {
-    #     "name": "cstn",
-    #     "password": "pass",
-    #     "email": "cstn@example.com",
-    #     "profile": {
-    #         "riot_name": "NupMaster",
-    #         "riot_region": "EUNE"
-    #     }
-    # },
+    {
+        "name": "cstn",
+        "password": "pass",
+        "email": "cstn@example.com",
+        "profile": {
+            "riot_name": "The Croc0",
+            "riot_region": "EUNE"
+        }
+    },
     {
         "name": "99 9 impulse fm",
         "password": "pass",
