@@ -443,7 +443,7 @@ function ProfilePage() {
                                 backgroundColor: Colors.FOLLY,
                             },
                         }}
-                        title="Search"
+                        title="Home"
                     >
                         <HomeIcon style={{ fontSize: 32, color: Colors.RICH_BLACK }} />
                     </IconButton>)}
