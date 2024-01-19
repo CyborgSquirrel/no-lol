@@ -66,6 +66,7 @@ class Friendship(ModelBase):
     )
 
     buddies: Mapped[bool] = mapped_column(nullable=False, default=False)
+    pending_buddy: Mapped[bool] = mapped_column(nullable=False, default=False)
     
     @property
     def sender(self):
@@ -85,6 +86,7 @@ class Friendship(ModelBase):
     def to_dict(self):
         return {
             "pending": self.pending,
+            "pending_buddy": self.pending_buddy,
             "sender": self.sender.to_dict(),
             "receiver": self.receiver.to_dict(),
             "buddies": self.buddies
